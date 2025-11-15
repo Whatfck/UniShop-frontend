@@ -1,23 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, MessageCircle, MapPin, Clock, Star, Share2, Flag } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, MapPin, Clock, Share2, Flag } from 'lucide-react';
 import { Header } from '../../components/layout';
 import { Button } from '../../components/ui';
 import { useTheme } from '../../hooks';
-import { mockProducts, getProductById } from '../../data/mockProducts';
+import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
 import { transformApiProduct } from '../../utils/apiTransformers';
+import LoginModal from '../../components/auth/LoginModal';
+import RegisterModal from '../../components/auth/RegisterModal';
 import type { Product } from '../../types';
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { user, isAuthenticated, login, register, logout } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -27,22 +32,13 @@ const ProductDetail = () => {
         setIsLoading(true);
         setError(null);
 
-        // Try to fetch from API first
         const apiProduct = await apiService.getProduct(Number(id));
         const transformedProduct = transformApiProduct(apiProduct);
         setProduct(transformedProduct);
         setIsFavorited(transformedProduct.isFavorited || false);
       } catch (apiError) {
-        console.warn('API not available, using mock data:', apiError);
-
-        // Fallback to mock data
-        const foundProduct = getProductById(id);
-        if (foundProduct) {
-          setProduct(foundProduct);
-          setIsFavorited(foundProduct.isFavorited || false);
-        } else {
-          setError('Producto no encontrado');
-        }
+        console.error('Error fetching product:', apiError);
+        setError('Error al cargar el producto. Verifica que el backend esté ejecutándose.');
       } finally {
         setIsLoading(false);
       }
@@ -95,6 +91,38 @@ const ProductDetail = () => {
     console.log('Report product:', product?.id);
   };
 
+  const handleLogin = () => {
+    setShowLoginModal(true);
+  };
+
+  const handleRegister = () => {
+    setShowRegisterModal(true);
+  };
+
+  const handleSwitchToRegister = () => {
+    setShowLoginModal(false);
+    setShowRegisterModal(true);
+  };
+
+  const handleSwitchToLogin = () => {
+    setShowRegisterModal(false);
+    setShowLoginModal(true);
+  };
+
+  const handleSellClick = () => {
+    // TODO: Navigate to sell product page
+    console.log('Navigate to sell product page');
+  };
+
+  const handleProfileClick = () => {
+    // TODO: Navigate to profile page
+    console.log('Navigate to profile page');
+  };
+
+  const handleLogoutClick = () => {
+    logout();
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
@@ -139,13 +167,62 @@ const ProductDetail = () => {
     );
   }
 
+  // Si no está autenticado, mostrar modal de login
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
+        <Header
+          searchQuery=""
+          onSearchChange={() => {}}
+          theme={theme}
+          onThemeToggle={toggleTheme}
+          onLoginClick={handleLogin}
+          onRegisterClick={handleRegister}
+        />
+
+        <main className="max-w-full mx-auto py-16 px-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+              Debes iniciar sesión para ver los detalles del producto
+            </h1>
+            <p className="mb-6" style={{ color: 'var(--color-text-secondary)' }}>
+              Regístrate o inicia sesión para explorar todos los productos disponibles.
+            </p>
+            <Button onClick={handleLogin}>
+              Iniciar Sesión
+            </Button>
+          </div>
+        </main>
+
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onSwitchToRegister={handleSwitchToRegister}
+        />
+
+        <RegisterModal
+          isOpen={showRegisterModal}
+          onClose={() => setShowRegisterModal(false)}
+          onSwitchToLogin={handleSwitchToLogin}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
       <Header
         searchQuery=""
         onSearchChange={() => {}}
+        isAuthenticated={isAuthenticated}
+        user={user || undefined}
         theme={theme}
         onThemeToggle={toggleTheme}
+        onLoginClick={handleLogin}
+        onRegisterClick={handleRegister}
+        onSellClick={handleSellClick}
+        onProfileClick={handleProfileClick}
+        onLogoutClick={handleLogoutClick}
       />
 
       <main className="max-w-full mx-auto py-8" style={{ paddingLeft: 'var(--container-padding)', paddingRight: 'var(--container-padding)' }}>
@@ -273,9 +350,8 @@ const ProductDetail = () => {
                     {product.seller.name}
                   </p>
                   <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                      {product.seller.rating} • Miembro desde {new Date(product.seller.memberSince).getFullYear()}
+                      Miembro desde {new Date(product.seller.memberSince).getFullYear()}
                     </span>
                   </div>
                 </div>
@@ -335,39 +411,20 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Related Products Section */}
-        <div className="mt-16">
-          <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--color-text-primary)' }}>
-            Productos relacionados
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {mockProducts
-              .filter(p => p.id !== product.id && p.category === product.category)
-              .slice(0, 5)
-              .map((relatedProduct) => (
-                <div
-                  key={relatedProduct.id}
-                  className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => navigate(`/product/${relatedProduct.id}`)}
-                >
-                  <div className="aspect-square rounded-lg overflow-hidden bg-[var(--color-border)] mb-2">
-                    <img
-                      src={relatedProduct.images[0]}
-                      alt={relatedProduct.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="font-medium text-sm mb-1 line-clamp-2" style={{ color: 'var(--color-text-primary)' }}>
-                    {relatedProduct.title}
-                  </h3>
-                  <p className="font-bold text-sm" style={{ color: 'var(--color-primary)' }}>
-                    ${relatedProduct.price.toLocaleString()}
-                  </p>
-                </div>
-              ))}
-          </div>
-        </div>
       </main>
+
+      {/* Auth Modals */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSwitchToRegister={handleSwitchToRegister}
+      />
+
+      <RegisterModal
+        isOpen={showRegisterModal}
+        onClose={() => setShowRegisterModal(false)}
+        onSwitchToLogin={handleSwitchToLogin}
+      />
     </div>
   );
 };

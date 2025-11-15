@@ -4,15 +4,18 @@ import type { ApiProduct, Product, Seller } from '../types';
  * Transforma un producto de la API al formato del frontend
  */
 export function transformApiProduct(apiProduct: ApiProduct): Product {
+  // Debug: log image transformation
+  console.log('Transforming images:', apiProduct.images, 'to URLs:', apiProduct.images.map(img => img.imageUrl));
+
   return {
     id: apiProduct.id.toString(),
     title: apiProduct.name,
     description: apiProduct.description,
     price: Number(apiProduct.price),
     condition: 'used', // Por defecto, asumimos usado ya que no viene del backend
-    images: apiProduct.images,
-    category: apiProduct.category.name,
-    seller: transformApiUserToSeller(apiProduct.user),
+    images: apiProduct.images.map(img => img.imageUrl),
+    category: apiProduct.category?.name || 'Sin categoría',
+    seller: transformApiUserToSeller(apiProduct),
     location: 'Campus UCC', // Por defecto, ya que no viene del backend
     createdAt: new Date(apiProduct.createdAt),
     updatedAt: new Date(apiProduct.updatedAt),
@@ -25,11 +28,11 @@ export function transformApiProduct(apiProduct: ApiProduct): Product {
 /**
  * Transforma un usuario de la API al formato Seller del frontend
  */
-export function transformApiUserToSeller(apiUser: ApiProduct['user']): Seller {
+export function transformApiUserToSeller(apiProduct: ApiProduct): Seller {
   return {
-    id: apiUser.id,
-    name: apiUser.name,
-    email: apiUser.email,
+    id: apiProduct.userId || '',
+    name: apiProduct.userName || 'Usuario desconocido',
+    email: '', // No viene del backend
     rating: 0, // Por defecto, ya que no viene del backend
     phoneVerified: false, // Por defecto, ya que no viene del backend
     memberSince: new Date(), // Por defecto, ya que no viene del backend

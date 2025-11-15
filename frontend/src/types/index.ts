@@ -30,6 +30,15 @@ export interface Seller {
 }
 
 // Backend API Product types
+export interface ApiProductImage {
+  id: number;
+  productId: number;
+  imageUrl: string;
+  isPrimary: boolean;
+  orderIndex: number;
+  createdAt: string | null;
+}
+
 export interface ApiProduct {
   id: number;
   name: string;
@@ -40,13 +49,9 @@ export interface ApiProduct {
     name: string;
   };
   categoryId: number;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-  };
   userId: string;
-  images: string[];
+  userName: string;
+  images: ApiProductImage[];
   status?: 'ACTIVE' | 'SOLD' | 'INACTIVE';
   createdAt: string;
   updatedAt: string;

@@ -12,8 +12,6 @@ import type { Product, ProductFilters } from '../../types';
 import { apiService } from '../../services/api';
 import { transformApiProduct, transformFiltersToApi } from '../../utils/apiTransformers';
 
-import { mockProducts } from '../../data/mockProducts';
-
 const Home = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,6 +22,7 @@ const Home = () => {
   const { user, isAuthenticated, login, register, logout } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [pendingProductId, setPendingProductId] = useState<string | null>(null);
   const { theme, toggleTheme } = useTheme();
 
   const fetchProducts = async (search?: string, filters?: ProductFilters) => {
@@ -42,9 +41,8 @@ const Home = () => {
       setProducts(transformedProducts);
     } catch (err) {
       console.error('Error fetching products:', err);
-      setError('Error al cargar los productos. Mostrando datos de ejemplo.');
-      // Fallback to mock data
-      setProducts(mockProducts);
+      setError('Error al cargar los productos. Verifica que el backend esté ejecutándose.');
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }
@@ -53,6 +51,15 @@ const Home = () => {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  // Redirigir al producto pendiente después de autenticarse
+  useEffect(() => {
+    if (isAuthenticated && pendingProductId) {
+      navigate(`/product/${pendingProductId}`);
+      setPendingProductId(null); // Limpiar el estado
+      setShowLoginModal(false); // Cerrar modal
+    }
+  }, [isAuthenticated, pendingProductId, navigate]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -66,7 +73,14 @@ const Home = () => {
 
   const handleProductClick = (product: Product) => {
     console.log('Product clicked:', product);
-    navigate(`/product/${product.id}`);
+    if (!isAuthenticated) {
+      // Si no está autenticado, guardar producto pendiente y mostrar modal de login
+      setPendingProductId(product.id);
+      setShowLoginModal(true);
+    } else {
+      // Si está autenticado, ir al detalle del producto
+      navigate(`/product/${product.id}`);
+    }
   };
 
   const handleFavoriteToggle = (productId: string) => {
@@ -152,12 +166,14 @@ const Home = () => {
         onLogoutClick={handleLogoutClick}
       />
 
-      {/* Hero Section */}
-      <HeroSection
-        onStartShopping={handleStartShopping}
-        onSellProduct={handleSellProduct}
-        isAuthenticated={isAuthenticated}
-      />
+      {/* Hero Section - Solo para usuarios no autenticados */}
+      {!isAuthenticated && (
+        <HeroSection
+          onStartShopping={handleStartShopping}
+          onSellProduct={handleSellProduct}
+          isAuthenticated={isAuthenticated}
+        />
+      )}
 
       <main className="max-w-full mx-auto py-8" style={{ paddingLeft: 'var(--container-padding)', paddingRight: 'var(--container-padding)' }}>
         <div className="flex flex-col lg:flex-row gap-8">

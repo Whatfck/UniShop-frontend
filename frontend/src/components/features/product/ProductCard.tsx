@@ -24,6 +24,9 @@ const ProductCard = ({
   showContactButton = false
 }: ProductCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const imageUrl = product.images && product.images.length > 0 ? product.images[0] : '/api/placeholder/300/300';
 
   return (
     <div
@@ -45,16 +48,33 @@ const ProductCard = ({
       {/* Imagen del producto */}
       <div className="relative aspect-square overflow-hidden" style={{ backgroundColor: 'var(--color-border)' }}>
         <img
-          src={product.images[0] || '/api/placeholder/300/300'}
+          src={imageUrl}
           alt={product.title}
           className={cn(
             "w-full h-full object-cover transition-all duration-300 group-hover:scale-105",
-            imageLoaded ? "opacity-100" : "opacity-0"
+            imageLoaded && !imageError ? "opacity-100" : "opacity-0"
           )}
-          onLoad={() => setImageLoaded(true)}
+          onLoad={() => {
+            setImageLoaded(true);
+            setImageError(false);
+          }}
+          onError={() => {
+            setImageError(true);
+            setImageLoaded(false);
+          }}
           loading={priority === 'high' ? 'eager' : 'lazy'}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
+
+        {/* Fallback image when original fails */}
+        {imageError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+            <div className="text-center text-gray-500">
+              <div className="text-4xl mb-2">📦</div>
+              <div className="text-sm">Imagen no disponible</div>
+            </div>
+          </div>
+        )}
 
         {/* Overlay de acciones */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200">

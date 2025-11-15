@@ -1,6 +1,15 @@
 // API base: asegurar que incluya el prefijo global '/api/v1' usado por el backend
 const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-const API_BASE_URL = RAW_API_URL.endsWith('/') ? `${RAW_API_URL}api/v1` : `${RAW_API_URL}/api/v1`;
+const API_BASE_URL = RAW_API_URL.endsWith('/') ? RAW_API_URL.slice(0, -1) : RAW_API_URL;
+
+export interface ApiProductImage {
+  id: number;
+  productId: number;
+  imageUrl: string;
+  isPrimary: boolean;
+  orderIndex: number;
+  createdAt: string | null;
+}
 
 export interface ApiProduct {
   id: number;
@@ -12,13 +21,9 @@ export interface ApiProduct {
     name: string;
   };
   categoryId: number;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-  };
   userId: string;
-  images: string[];
+  userName: string;
+  images: ApiProductImage[];
   status: 'ACTIVE' | 'SOLD' | 'INACTIVE';
   createdAt: string;
   updatedAt: string;
@@ -62,19 +67,27 @@ class ApiService {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
 
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-      ...options,
-    });
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options?.headers,
+        },
+        ...options,
+      });
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error(`No se puede conectar al servidor. Verifica que el backend esté corriendo en ${RAW_API_URL}`);
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   async getProducts(filters?: ApiFilters): Promise<ApiProduct[]> {
@@ -89,39 +102,93 @@ class ApiService {
     }
 
     const queryString = params.toString();
-    const endpoint = `/products${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/v1/products${queryString ? `?${queryString}` : ''}`;
 
     return this.request<ApiProduct[]>(endpoint);
   }
 
   async getProduct(id: number): Promise<ApiProduct> {
-    return this.request<ApiProduct>(`/products/${id}`);
+    return this.request<ApiProduct>(`/api/v1/products/${id}`);
   }
 
   async recordContact(productId: number): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/products/${productId}/contact`, {
+    return this.request<{ message: string }>(`/api/v1/products/${productId}/contact`, {
       method: 'POST',
     });
   }
 
   // Auth methods
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/login', {
+    return this.request<AuthResponse>('/api/v1/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
   }
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/users/register', {
+    return this.request<AuthResponse>('/api/v1/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
   }
 
   async getProfile(): Promise<any> {
-    return this.request('/users/me', {
+    return this.request('/api/v1/auth/me', {
       method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+  }
+
+  // Categories
+  async getCategories(): Promise<{ id: number; name: string }[]> {
+    return this.request('/api/v1/categories');
+  }
+
+  // Favorites
+  async getFavorites(): Promise<ApiProduct[]> {
+    return this.request('/api/v1/favorites', {
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+  }
+
+  async addToFavorites(productId: number): Promise<{ message: string }> {
+    return this.request(`/api/v1/favorites/${productId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+  }
+
+  async removeFromFavorites(productId: number): Promise<{ message: string }> {
+    return this.request(`/api/v1/favorites/${productId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+  }
+
+  async toggleFavorite(productId: number): Promise<{ message: string }> {
+    return this.request(`/api/v1/favorites/${productId}/toggle`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+  }
+
+  async checkFavorite(productId: number): Promise<{ isFavorited: boolean }> {
+    return this.request(`/api/v1/favorites/${productId}/check`, {
       headers: {
         'Authorization': `Bearer ${this.getToken()}`,
         'Content-Type': 'application/json',
