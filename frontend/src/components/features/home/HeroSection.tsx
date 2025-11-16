@@ -10,7 +10,7 @@ interface HeroSectionProps {
 const HeroSection = ({ onStartShopping, onSellProduct, isAuthenticated = false }: HeroSectionProps) => {
   return (
     <section
-      className="relative py-16 md:py-24 lg:py-32 overflow-hidden"
+      className="relative py-12 sm:py-16 md:py-24 lg:py-32 overflow-hidden"
       style={{
         background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)'
       }}
@@ -26,36 +26,36 @@ const HeroSection = ({ onStartShopping, onSellProduct, isAuthenticated = false }
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center space-y-8">
           {/* Main Heading */}
-          <div className="space-y-4">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight">
+          <div className="space-y-3 sm:space-y-4">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight">
               Compra y vende en tu
               <br />
               <span className="text-yellow-300">comunidad universitaria</span>
             </h1>
 
-            <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed px-2 sm:px-0">
               Conecta con estudiantes de la UCC, encuentra productos únicos y ahorra dinero
               en un marketplace exclusivo para la comunidad universitaria.
             </p>
           </div>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-4 px-4 sm:px-0">
             {isAuthenticated ? (
               <>
                 <Button
                   size="lg"
-                  className="bg-white text-[var(--color-primary)] hover:bg-white/90 px-8 py-4 text-lg font-semibold shadow-lg"
+                  className="bg-white text-[var(--color-primary)] hover:bg-white/90 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold shadow-lg w-full sm:w-auto"
                   onClick={onStartShopping}
                 >
-                  <ShoppingBag className="h-5 w-5 mr-2" />
+                  <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                   Explorar productos
                 </Button>
 
                 <Button
                   variant="outline"
                   size="lg"
-                  className="border-white text-white hover:bg-white hover:text-[var(--color-primary)] px-8 py-4 text-lg font-semibold"
+                  className="border-white text-white hover:bg-white hover:text-[var(--color-primary)] px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold w-full sm:w-auto"
                   onClick={onSellProduct}
                 >
                   Vender producto
@@ -65,17 +65,17 @@ const HeroSection = ({ onStartShopping, onSellProduct, isAuthenticated = false }
               <>
                 <Button
                   size="lg"
-                  className="bg-white text-[var(--color-primary)] hover:bg-white/90 px-8 py-4 text-lg font-semibold shadow-lg"
+                  className="bg-white text-[var(--color-primary)] hover:bg-white/90 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold shadow-lg w-full sm:w-auto"
                   onClick={onStartShopping}
                 >
-                  <ShoppingBag className="h-5 w-5 mr-2" />
+                  <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                   Empezar a comprar
                 </Button>
 
                 <Button
                   variant="outline"
                   size="lg"
-                  className="border-white text-white hover:bg-white hover:text-[var(--color-primary)] px-8 py-4 text-lg font-semibold"
+                  className="border-white text-white hover:bg-white hover:text-[var(--color-primary)] px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold w-full sm:w-auto"
                   onClick={onSellProduct}
                 >
                   Vender producto

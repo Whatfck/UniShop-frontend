@@ -110,44 +110,45 @@ const ProductCard = ({
       </div>
 
       {/* Información del producto */}
-      <div className="p-4 space-y-2">
+      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
         <h3
-          className="font-medium mb-1 line-clamp-2 group-hover:text-[var(--color-primary)] transition-colors"
+          className="font-medium text-sm sm:text-base leading-tight line-clamp-2 group-hover:text-[var(--color-primary)] transition-colors"
           style={{ color: 'var(--color-text-primary)' }}
         >
           {product.title}
         </h3>
 
         <p
-          className="text-lg font-bold mb-3"
+          className="text-base sm:text-lg font-bold"
           style={{ color: 'var(--color-primary)' }}
         >
           ${product.price.toLocaleString().replace(/,/g, '.')}
         </p>
 
         <div
-          className="flex items-center text-sm mb-3"
+          className="flex items-center text-xs sm:text-sm"
           style={{ color: 'var(--color-text-secondary)' }}
         >
           <div className="flex items-center gap-1">
-            <MapPin className="h-4 w-4" />
-            <span>{product.location}</span>
+            <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="truncate">{product.location}</span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div
-            className="flex items-center gap-2 text-sm"
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-w-0 flex-1"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            <span>{product.seller.name}</span>
+            <span className="truncate">{product.seller.name}</span>
           </div>
           <div
-            className="flex items-center gap-1 text-xs"
+            className="flex items-center gap-1 text-xs flex-shrink-0"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            <Clock className="h-3 w-3" />
-            <span>{new Date(product.createdAt).toLocaleDateString('es-CO')}</span>
+            <Clock className="h-3 w-3 flex-shrink-0" />
+            <span className="hidden sm:inline">{new Date(product.createdAt).toLocaleDateString('es-CO')}</span>
+            <span className="sm:hidden">{new Date(product.createdAt).toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })}</span>
           </div>
         </div>
 

@@ -14,6 +14,7 @@ interface HeaderProps {
     role?: 'USER' | 'MODERATOR' | 'ADMIN';
   };
   theme: Theme;
+  resolvedTheme: 'light' | 'dark';
   onThemeToggle: () => void;
   onLoginClick?: () => void;
   onRegisterClick?: () => void;
@@ -29,6 +30,7 @@ const Header = ({
   isAuthenticated = false,
   user,
   theme,
+  resolvedTheme,
   onThemeToggle,
   onLoginClick,
   onRegisterClick,
@@ -45,8 +47,8 @@ const Header = ({
 
   return (
     <header className="sticky top-0 z-50 shadow-sm border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+        <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
             <a
@@ -105,14 +107,6 @@ const Header = ({
 
           {/* Actions */}
           <div className="flex items-center space-x-2 md:space-x-4">
-            <button
-              onClick={onThemeToggle}
-              className="p-2 rounded-lg hover:bg-[var(--color-hover)] transition-colors hidden md:flex"
-              style={{ color: 'var(--color-text-secondary)' }}
-              aria-label="Cambiar tema"
-            >
-              {theme === 'dark' ? '☀️' : '🌙'}
-            </button>
 
             {isAuthenticated ? (
               <>
@@ -125,12 +119,14 @@ const Header = ({
                   </Button>
                 )}
                 <div className="relative group">
-                  <img
-                    src={user?.avatar || '/api/placeholder/40/40'}
-                    alt="Perfil"
-                    className="w-8 h-8 md:w-10 md:h-10 rounded-full cursor-pointer"
+                  <div
+                    className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[var(--color-border)] flex items-center justify-center cursor-pointer"
                     onClick={onProfileClick}
-                  />
+                  >
+                    <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                      {user?.name?.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
                   {/* Dropdown Menu */}
                   <div className="absolute right-0 mt-2 w-48 bg-[var(--color-surface)] rounded-md shadow-lg border border-[var(--color-border)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                     <div className="py-1">
@@ -213,6 +209,21 @@ const Header = ({
           </div>
         )}
       </div>
+
+      {/* Floating Theme Toggle Button */}
+      <button
+        onClick={onThemeToggle}
+        className="fixed bottom-20 right-6 z-50 w-12 h-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
+        style={{
+          backgroundColor: 'var(--color-surface)',
+          border: `2px solid var(--color-border)`,
+          color: 'var(--color-text-primary)'
+        }}
+        aria-label={`Tema actual: ${resolvedTheme === 'light' ? 'claro' : 'oscuro'}. Haz clic para cambiar`}
+        title={`Tema: ${resolvedTheme === 'light' ? 'Claro' : 'Oscuro'}`}
+      >
+        {resolvedTheme === 'light' ? '☀️' : '🌙'}
+      </button>
     </header>
   );
 };

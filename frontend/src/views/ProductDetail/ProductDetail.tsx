@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, MessageCircle, MapPin, Clock, Share2, Flag } from 'lucide-react';
+import { Heart, MessageCircle, MapPin, Clock, Share2, Flag } from 'lucide-react';
 import { Header } from '../../components/layout';
 import { Button } from '../../components/ui';
 import { useTheme } from '../../hooks';
@@ -14,7 +14,7 @@ import type { Product } from '../../types';
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, resolvedTheme, toggleTheme } = useTheme();
   const { user, isAuthenticated, login, register, logout } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -23,6 +23,17 @@ const ProductDetail = () => {
   const [error, setError] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+
+  // Advanced image carousel state
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [dragDistance, setDragDistance] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [lastTapTime, setLastTapTime] = useState(0);
+  const [showZoomHint, setShowZoomHint] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -46,6 +57,11 @@ const ProductDetail = () => {
 
     fetchProduct();
   }, [id]);
+
+  // Reset zoom when changing images
+  useEffect(() => {
+    resetZoom();
+  }, [currentImageIndex]);
 
   const handleFavoriteToggle = () => {
     setIsFavorited(!isFavorited);
@@ -123,6 +139,221 @@ const ProductDetail = () => {
     logout();
   };
 
+  // Advanced gesture handlers
+  const resetZoom = () => {
+    setZoom(1);
+    setPanX(0);
+    setPanY(0);
+    setIsZoomed(false);
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (zoom > 1) {
+      resetZoom();
+    } else {
+      // Zoom to 2x at click position
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      setZoom(2);
+      setPanX((rect.width / 2 - x) * 2);
+      setPanY((rect.height / 2 - y) * 2);
+      setIsZoomed(true);
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (isZoomed) {
+      // Pan mode when zoomed
+      setIsDragging(true);
+      setStartX(e.clientX - panX);
+    } else {
+      // Swipe mode when not zoomed
+      setIsDragging(true);
+      setStartX(e.clientX);
+      setDragDistance(0);
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+
+    if (isZoomed) {
+      // Pan the zoomed image
+      const newPanX = e.clientX - startX;
+      const newPanY = e.clientY - (startX + panY - panX); // Maintain aspect ratio
+
+      // Constrain pan to image bounds
+      const maxPanX = (zoom - 1) * 200; // Assuming 200px base width
+      const maxPanY = (zoom - 1) * 200;
+
+      setPanX(Math.max(-maxPanX, Math.min(maxPanX, newPanX)));
+      setPanY(Math.max(-maxPanY, Math.min(maxPanY, newPanY)));
+    } else {
+      // Show drag preview
+      const currentX = e.clientX;
+      setDragDistance(currentX - startX);
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging || !product) return;
+
+    if (!isZoomed) {
+      // Handle swipe to change image
+      const threshold = 100;
+
+      if (Math.abs(dragDistance) > threshold) {
+        if (dragDistance > 0 && currentImageIndex > 0) {
+          setCurrentImageIndex(currentImageIndex - 1);
+        } else if (dragDistance < 0 && currentImageIndex < product.images.length - 1) {
+          setCurrentImageIndex(currentImageIndex + 1);
+        }
+      }
+    }
+
+    setIsDragging(false);
+    setDragDistance(0);
+  };
+
+  const handleMouseLeave = () => {
+    if (isDragging) {
+      handleMouseUp();
+    }
+    setShowZoomHint(false);
+  };
+
+  const handleMouseEnter = () => {
+    if (!isZoomed && zoom === 1) {
+      setShowZoomHint(true);
+    }
+  };
+
+  // Touch handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+
+    // Check for double tap
+    const currentTime = Date.now();
+    if (currentTime - lastTapTime < 300) {
+      handleDoubleTap(touch);
+      setLastTapTime(0);
+      return;
+    }
+    setLastTapTime(currentTime);
+
+    if (e.touches.length === 2) {
+      // Pinch start
+      handlePinchStart(e);
+    } else if (isZoomed) {
+      // Pan start
+      setIsDragging(true);
+      setStartX(touch.clientX - panX);
+    } else {
+      // Swipe start
+      setIsDragging(true);
+      setStartX(touch.clientX);
+      setDragDistance(0);
+    }
+  };
+
+  const handleDoubleTap = (touch: React.Touch) => {
+    if (zoom > 1) {
+      resetZoom();
+    } else {
+      // Zoom to 2x at touch position
+      const rect = (touch.target as HTMLElement).getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      setZoom(2);
+      setPanX((rect.width / 2 - x) * 2);
+      setPanY((rect.height / 2 - y) * 2);
+      setIsZoomed(true);
+    }
+  };
+
+  const handlePinchStart = (e: React.TouchEvent) => {
+    // Basic pinch implementation
+    const touch1 = e.touches[0];
+    const touch2 = e.touches[1];
+    const initialDistance = Math.sqrt(
+      Math.pow(touch2.clientX - touch1.clientX, 2) +
+      Math.pow(touch2.clientY - touch1.clientY, 2)
+    );
+    (e.currentTarget as any).initialDistance = initialDistance;
+    (e.currentTarget as any).initialZoom = zoom;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      // Handle pinch
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.sqrt(
+        Math.pow(touch2.clientX - touch1.clientX, 2) +
+        Math.pow(touch2.clientY - touch1.clientY, 2)
+      );
+
+      const element = e.currentTarget as any;
+      const newZoom = Math.max(1, Math.min(4, element.initialZoom * (distance / element.initialDistance)));
+      setZoom(newZoom);
+      setIsZoomed(newZoom > 1);
+    } else if (isDragging) {
+      if (isZoomed) {
+        // Pan
+        const touch = e.touches[0];
+        const newPanX = touch.clientX - startX;
+        const newPanY = touch.clientY - (startX + panY - panX);
+
+        const maxPanX = (zoom - 1) * 200;
+        const maxPanY = (zoom - 1) * 200;
+
+        setPanX(Math.max(-maxPanX, Math.min(maxPanX, newPanX)));
+        setPanY(Math.max(-maxPanY, Math.min(maxPanY, newPanY)));
+      } else {
+        // Swipe preview
+        const touch = e.touches[0];
+        setDragDistance(touch.clientX - startX);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging || !product) return;
+
+    if (!isZoomed) {
+      const threshold = 100;
+
+      if (Math.abs(dragDistance) > threshold) {
+        if (dragDistance > 0 && currentImageIndex > 0) {
+          setCurrentImageIndex(currentImageIndex - 1);
+        } else if (dragDistance < 0 && currentImageIndex < product.images.length - 1) {
+          setCurrentImageIndex(currentImageIndex + 1);
+        }
+      }
+    }
+
+    setIsDragging(false);
+    setDragDistance(0);
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (zoom === 1 && product) { // Only allow navigation when not zoomed
+        if (e.key === 'ArrowLeft' && currentImageIndex > 0) {
+          setCurrentImageIndex(currentImageIndex - 1);
+        } else if (e.key === 'ArrowRight' && currentImageIndex < product.images.length - 1) {
+          setCurrentImageIndex(currentImageIndex + 1);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentImageIndex, product, zoom]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
@@ -130,6 +361,7 @@ const ProductDetail = () => {
           searchQuery=""
           onSearchChange={() => {}}
           theme={theme}
+          resolvedTheme={resolvedTheme}
           onThemeToggle={toggleTheme}
         />
         <main className="max-w-full mx-auto py-16 px-4">
@@ -151,6 +383,7 @@ const ProductDetail = () => {
           searchQuery=""
           onSearchChange={() => {}}
           theme={theme}
+          resolvedTheme={resolvedTheme}
           onThemeToggle={toggleTheme}
         />
         <main className="max-w-full mx-auto py-16 px-4">
@@ -175,6 +408,7 @@ const ProductDetail = () => {
           searchQuery=""
           onSearchChange={() => {}}
           theme={theme}
+          resolvedTheme={resolvedTheme}
           onThemeToggle={toggleTheme}
           onLoginClick={handleLogin}
           onRegisterClick={handleRegister}
@@ -217,6 +451,7 @@ const ProductDetail = () => {
         isAuthenticated={isAuthenticated}
         user={user || undefined}
         theme={theme}
+        resolvedTheme={resolvedTheme}
         onThemeToggle={toggleTheme}
         onLoginClick={handleLogin}
         onRegisterClick={handleRegister}
@@ -226,41 +461,87 @@ const ProductDetail = () => {
       />
 
       <main className="max-w-full mx-auto py-8" style={{ paddingLeft: 'var(--container-padding)', paddingRight: 'var(--container-padding)' }}>
-        {/* Back button */}
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver
-          </Button>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Product Images */}
           <div className="space-y-4">
-            {/* Main Image */}
-            <div className="relative aspect-square rounded-xl overflow-hidden bg-[var(--color-border)]">
-              <img
-                src={product.images[currentImageIndex]}
-                alt={product.title}
-                className="w-full h-full object-cover"
-              />
+            {/* Advanced Image Viewer */}
+            <div
+              className={`relative aspect-square rounded-xl overflow-hidden bg-[var(--color-border)] select-none ${
+                isZoomed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+              }`}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+              onMouseEnter={handleMouseEnter}
+              onDoubleClick={handleDoubleClick}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              role="img"
+              aria-label={`Imagen del producto ${product.title}. ${isZoomed ? 'Ampliada' : 'Haz doble clic para ampliar'}. Imagen ${currentImageIndex + 1} de ${product.images.length}`}
+              tabIndex={0}
+              style={{
+                touchAction: isZoomed ? 'none' : 'pan-y pinch-zoom'
+              }}
+            >
+              <div
+                className="w-full h-full transition-transform duration-300 ease-out"
+                style={{
+                  transform: isDragging && !isZoomed
+                    ? `translateX(${dragDistance * 0.3}px)`
+                    : `scale(${zoom}) translate(${panX}px, ${panY}px)`,
+                  transformOrigin: 'center center',
+                  cursor: isZoomed ? (isDragging ? 'grabbing' : 'grab') : 'pointer'
+                }}
+              >
+                <img
+                  src={product.images[currentImageIndex]}
+                  alt={`${product.title} ${currentImageIndex + 1}`}
+                  className="w-full h-full object-cover"
+                  style={{
+                    userSelect: 'none',
+                    pointerEvents: 'none'
+                  }}
+                  draggable={false}
+                />
+              </div>
 
               {/* Favorite Button */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleFavoriteToggle}
-                className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white"
+                className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white z-20"
                 aria-label={isFavorited ? "Quitar de favoritos" : "Agregar a favoritos"}
               >
                 <Heart
                   className={`h-5 w-5 ${isFavorited ? 'fill-red-500 text-red-500' : 'text-gray-600'}`}
                 />
               </Button>
+
+              {/* Image Counter */}
+              {product.images.length > 1 && (
+                <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm z-20">
+                  {currentImageIndex + 1} / {product.images.length}
+                </div>
+              )}
+
+              {/* Zoom Indicator */}
+              {zoom > 1 && (
+                <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm z-20">
+                  {zoom.toFixed(1)}× Zoom
+                </div>
+              )}
+
+              {/* Zoom Hint */}
+              {showZoomHint && !isZoomed && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10 pointer-events-none">
+                  <div className="bg-black/70 text-white px-4 py-2 rounded-lg text-sm">
+                    🔍 Doble clic para hacer zoom
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Thumbnail Images */}

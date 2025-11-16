@@ -23,7 +23,7 @@ const Home = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [pendingProductId, setPendingProductId] = useState<string | null>(null);
-  const { theme, toggleTheme } = useTheme();
+  const { theme, resolvedTheme, toggleTheme } = useTheme();
 
   const fetchProducts = async (search?: string, filters?: ProductFilters) => {
     try {
@@ -158,6 +158,7 @@ const Home = () => {
         isAuthenticated={isAuthenticated}
         user={user || undefined}
         theme={theme}
+        resolvedTheme={resolvedTheme}
         onThemeToggle={toggleTheme}
         onLoginClick={handleLogin}
         onRegisterClick={handleRegister}
@@ -195,6 +196,7 @@ const Home = () => {
               onProductClick={handleProductClick}
               onFavoriteToggle={handleFavoriteToggle}
               onContact={handleContact}
+              showContactButton={!isAuthenticated}
             />
           </div>
         </div>
