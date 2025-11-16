@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Search } from 'lucide-react';
 import { Button } from '../ui';
 import type { Theme } from '../../types';
@@ -13,6 +13,7 @@ interface HeaderProps {
     avatar?: string;
     role?: 'USER' | 'MODERATOR' | 'ADMIN';
   };
+  hasProductsForSale?: boolean;
   theme: Theme;
   resolvedTheme: 'light' | 'dark';
   onThemeToggle: () => void;
@@ -29,6 +30,7 @@ const Header = ({
   onSearchSubmit,
   isAuthenticated = false,
   user,
+  hasProductsForSale = false,
   theme,
   resolvedTheme,
   onThemeToggle,
@@ -54,10 +56,10 @@ const Header = ({
             <a
               href="/"
               className="text-2xl font-black hover:opacity-80 transition-opacity"
-              style={{ color: 'var(--color-text-primary)' }}
+              style={{ color: 'var(--color-text-primary)', fontWeight: '900' }}
             >
-              <span style={{ color: 'var(--color-primary)' }}>Uni</span>
-              <span style={{ color: 'var(--color-secondary)' }}>Shop</span>
+              <span style={{ color: 'var(--color-primary)', fontWeight: '900' }}>Uni</span>
+              <span style={{ color: 'var(--color-secondary)', fontWeight: '900' }}>Shop</span>
             </a>
           </div>
 
@@ -87,32 +89,23 @@ const Header = ({
             </div>
           )}
 
-          {/* Mobile Search Button - Only for authenticated users */}
-          {isAuthenticated && (
-            <div className="md:hidden mx-2">
-              <button
-                onClick={() => setShowMobileSearch(!showMobileSearch)}
-                className="flex items-center justify-center w-10 h-10 rounded-lg border hover:bg-[var(--color-hover)] transition-colors"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-secondary)'
-                }}
-                aria-label="Buscar productos"
-              >
-                <Search className="h-5 w-5" />
-              </button>
-            </div>
-          )}
 
           {/* Actions */}
           <div className="flex items-center space-x-2 md:space-x-4">
 
             {isAuthenticated ? (
               <>
-                <Button variant="secondary" size="sm" onClick={onSellClick}>
-                  Vender
+                {/* Mobile Search Button - Only visible on mobile */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowMobileSearch(!showMobileSearch)}
+                  className="md:hidden"
+                  aria-label="Buscar productos"
+                >
+                  <Search className="h-4 w-4" />
                 </Button>
+
                 {user?.role === 'MODERATOR' && (
                   <Button variant="outline" size="sm">
                     Moderar
@@ -120,7 +113,7 @@ const Header = ({
                 )}
                 <div className="relative group">
                   <div
-                    className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[var(--color-border)] flex items-center justify-center cursor-pointer"
+                    className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[var(--color-border)] flex items-center justify-center cursor-pointer"
                     onClick={onProfileClick}
                   >
                     <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
@@ -130,6 +123,13 @@ const Header = ({
                   {/* Dropdown Menu */}
                   <div className="absolute right-0 mt-2 w-48 bg-[var(--color-surface)] rounded-md shadow-lg border border-[var(--color-border)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                     <div className="py-1">
+                      <button
+                        onClick={onSellClick}
+                        className="block w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-hover)] transition-colors font-medium"
+                        style={{ color: 'var(--color-primary)' }}
+                      >
+                        Vender
+                      </button>
                       <button
                         onClick={onProfileClick}
                         className="block w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-hover)] transition-colors"
@@ -178,33 +178,34 @@ const Header = ({
           </div>
         </div>
 
-        {/* Mobile Search Bar */}
-        {showMobileSearch && (
-          <div className="md:hidden pb-4">
-            <form onSubmit={handleSearchSubmit} className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: 'var(--color-text-secondary)' }} />
-              <input
-                type="search"
-                placeholder="Buscar productos..."
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearchSubmit(e);
-                  }
-                }}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-primary)'
-                }}
-                autoFocus
-              />
-            </form>
-          </div>
-        )}
       </div>
+
+      {/* Mobile Search Bar - Expandable */}
+      {showMobileSearch && (
+        <div className="md:hidden border-t border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3">
+          <form onSubmit={handleSearchSubmit} className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: 'var(--color-text-secondary)' }} />
+            <input
+              type="search"
+              placeholder="Buscar productos..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearchSubmit(e);
+                }
+              }}
+              autoFocus
+              className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-colors"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text-primary)'
+              }}
+            />
+          </form>
+        </div>
+      )}
 
       {/* Floating Theme Toggle Button */}
       <button

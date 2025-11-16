@@ -363,6 +363,7 @@ const ProductDetail = () => {
           theme={theme}
           resolvedTheme={resolvedTheme}
           onThemeToggle={toggleTheme}
+          hasProductsForSale={false}
         />
         <main className="max-w-full mx-auto py-16 px-4">
           <div className="text-center">
@@ -412,6 +413,7 @@ const ProductDetail = () => {
           onThemeToggle={toggleTheme}
           onLoginClick={handleLogin}
           onRegisterClick={handleRegister}
+          hasProductsForSale={false}
         />
 
         <main className="max-w-full mx-auto py-16 px-4">
@@ -450,6 +452,7 @@ const ProductDetail = () => {
         onSearchChange={() => {}}
         isAuthenticated={isAuthenticated}
         user={user || undefined}
+        hasProductsForSale={false}
         theme={theme}
         resolvedTheme={resolvedTheme}
         onThemeToggle={toggleTheme}

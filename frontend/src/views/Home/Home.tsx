@@ -23,6 +23,7 @@ const Home = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [pendingProductId, setPendingProductId] = useState<string | null>(null);
+  const [hasProductsForSale, setHasProductsForSale] = useState(false);
   const { theme, resolvedTheme, toggleTheme } = useTheme();
 
   const fetchProducts = async (search?: string, filters?: ProductFilters) => {
@@ -51,6 +52,28 @@ const Home = () => {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  // Check if user has products for sale when authenticated
+  useEffect(() => {
+    const checkUserProducts = async () => {
+      if (isAuthenticated && user) {
+        try {
+          // For now, check if user has any products by filtering products
+          // TODO: Implement proper user products endpoint
+          const allProducts = await apiService.getProducts();
+          const userProducts = allProducts.filter(product => product.userId === user.id);
+          setHasProductsForSale(userProducts.length > 0);
+        } catch (error) {
+          console.error('Error checking user products:', error);
+          setHasProductsForSale(false);
+        }
+      } else {
+        setHasProductsForSale(false);
+      }
+    };
+
+    checkUserProducts();
+  }, [isAuthenticated, user]);
 
   // Redirigir al producto pendiente después de autenticarse
   useEffect(() => {
@@ -157,6 +180,7 @@ const Home = () => {
         onSearchSubmit={handleSearch}
         isAuthenticated={isAuthenticated}
         user={user || undefined}
+        hasProductsForSale={hasProductsForSale}
         theme={theme}
         resolvedTheme={resolvedTheme}
         onThemeToggle={toggleTheme}
