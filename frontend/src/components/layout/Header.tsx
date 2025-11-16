@@ -61,49 +61,49 @@ const Header = ({
             </a>
           </div>
 
-          {/* Desktop Search Bar */}
-          <div className="flex-1 max-w-2xl mx-8 hidden md:block">
-            <form onSubmit={handleSearchSubmit} className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: 'var(--color-text-secondary)' }} />
-              <input
-                type="search"
-                placeholder="Buscar productos..."
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-10 pr-20 py-2 rounded-lg border focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-colors"
+          {/* Desktop Search Bar - Only for authenticated users */}
+          {isAuthenticated && (
+            <div className="flex-1 max-w-2xl mx-8 hidden md:block">
+              <form onSubmit={handleSearchSubmit} className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: 'var(--color-text-secondary)' }} />
+                <input
+                  type="search"
+                  placeholder="Buscar productos..."
+                  value={searchQuery}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearchSubmit(e);
+                    }
+                  }}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-colors"
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text-primary)'
+                  }}
+                />
+              </form>
+            </div>
+          )}
+
+          {/* Mobile Search Button - Only for authenticated users */}
+          {isAuthenticated && (
+            <div className="md:hidden mx-2">
+              <button
+                onClick={() => setShowMobileSearch(!showMobileSearch)}
+                className="flex items-center justify-center w-10 h-10 rounded-lg border hover:bg-[var(--color-hover)] transition-colors"
                 style={{
                   backgroundColor: 'var(--color-surface)',
                   borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-primary)'
+                  color: 'var(--color-text-secondary)'
                 }}
-              />
-              <Button
-                type="submit"
-                variant="primary"
-                size="sm"
-                className="absolute right-1 top-1 bottom-1 px-4"
-                disabled={!searchQuery.trim()}
+                aria-label="Buscar productos"
               >
-                Buscar
-              </Button>
-            </form>
-          </div>
-
-          {/* Mobile Search Button */}
-          <div className="md:hidden flex-1 max-w-xs mx-4">
-            <button
-              onClick={() => setShowMobileSearch(!showMobileSearch)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                borderColor: 'var(--color-border)',
-                color: 'var(--color-text-secondary)'
-              }}
-            >
-              <Search className="h-4 w-4" />
-              <span className="text-sm">Buscar...</span>
-            </button>
-          </div>
+                <Search className="h-5 w-5" />
+              </button>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center space-x-2 md:space-x-4">
@@ -188,7 +188,12 @@ const Header = ({
                 placeholder="Buscar productos..."
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-10 pr-20 py-2 rounded-lg border focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearchSubmit(e);
+                  }
+                }}
+                className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
                 style={{
                   backgroundColor: 'var(--color-surface)',
                   borderColor: 'var(--color-border)',
@@ -196,15 +201,6 @@ const Header = ({
                 }}
                 autoFocus
               />
-              <Button
-                type="submit"
-                variant="primary"
-                size="sm"
-                className="absolute right-1 top-1 bottom-1 px-4"
-                disabled={!searchQuery.trim()}
-              >
-                Buscar
-              </Button>
             </form>
           </div>
         )}
