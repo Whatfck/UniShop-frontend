@@ -6,15 +6,22 @@ interface FilterPanelProps {
 }
 
 const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
-  const categories = ['Libros', 'Tecnología', 'Ropa', 'Hogar', 'Deportes'];
+  const categories = [
+    { name: 'Libros', id: 1 },
+    { name: 'Tecnología', id: 2 },
+    { name: 'Material de Laboratorio', id: 3 },
+    { name: 'Arquitectura', id: 4 },
+    { name: 'Útiles Escolares', id: 5 },
+    { name: 'Otros', id: 6 }
+  ];
   const conditions = ['Nuevo', 'Usado'] as const;
   const dateOptions = ['Hoy', 'Esta semana', 'Este mes'] as const;
 
-  const handleCategoryChange = (category: string, checked: boolean) => {
+  const handleCategoryChange = (categoryId: number, checked: boolean) => {
     // For now, single category selection
     onFiltersChange({
       ...filters,
-      category: checked ? category : undefined
+      categoryId: checked ? categoryId : undefined
     });
   };
 
@@ -65,11 +72,11 @@ const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
         </h3>
         <div className="space-y-2">
           {categories.map((category) => (
-            <label key={category} className="flex items-center cursor-pointer">
+            <label key={category.id} className="flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={filters.category === category}
-                onChange={(e) => handleCategoryChange(category, e.target.checked)}
+                checked={filters.categoryId === category.id}
+                onChange={(e) => handleCategoryChange(category.id, e.target.checked)}
                 className="rounded"
                 style={{
                   accentColor: 'var(--color-primary)',
@@ -80,7 +87,7 @@ const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
                 className="ml-2 text-sm"
                 style={{ color: 'var(--color-text-primary)' }}
               >
-                {category}
+                {category.name}
               </span>
             </label>
           ))}

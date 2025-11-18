@@ -12,7 +12,7 @@ export function transformApiProduct(apiProduct: ApiProduct): Product {
     title: apiProduct.name,
     description: apiProduct.description,
     price: Number(apiProduct.price),
-    condition: 'used', // Por defecto, asumimos usado ya que no viene del backend
+    condition: apiProduct.condition === 'Nuevo' ? 'new' : 'used',
     images: apiProduct.images.map(img => img.imageUrl),
     category: apiProduct.category?.name || 'Sin categoría',
     seller: transformApiUserToSeller(apiProduct),
@@ -29,10 +29,12 @@ export function transformApiProduct(apiProduct: ApiProduct): Product {
  * Transforma un usuario de la API al formato Seller del frontend
  */
 export function transformApiUserToSeller(apiProduct: ApiProduct): Seller {
+  const userId = apiProduct.userId || '';
   return {
-    id: apiProduct.userId || '',
+    id: userId,
     name: apiProduct.userName || 'Usuario desconocido',
     email: '', // No viene del backend
+    avatar: generateRandomAvatar(userId), // Avatar aleatorio basado en el ID del usuario
     rating: 0, // Por defecto, ya que no viene del backend
     phoneVerified: false, // Por defecto, ya que no viene del backend
     memberSince: new Date(), // Por defecto, ya que no viene del backend
@@ -43,7 +45,7 @@ export function transformApiUserToSeller(apiProduct: ApiProduct): Seller {
  * Transforma filtros del frontend a filtros de la API
  */
 export function transformFiltersToApi(filters: {
-  category?: string;
+  categoryId?: number;
   priceMin?: number;
   priceMax?: number;
   condition?: 'new' | 'used';
@@ -57,6 +59,10 @@ export function transformFiltersToApi(filters: {
     apiFilters.search = filters.search;
   }
 
+  if (filters.categoryId !== undefined) {
+    apiFilters.categoryId = filters.categoryId;
+  }
+
   if (filters.priceMin !== undefined) {
     apiFilters.minPrice = filters.priceMin;
   }
@@ -65,8 +71,15 @@ export function transformFiltersToApi(filters: {
     apiFilters.maxPrice = filters.priceMax;
   }
 
-  // Nota: category, condition, datePosted, location no se mapean directamente
+  // Nota: condition, datePosted, location no se mapean directamente
   // ya que el backend no tiene estos filtros específicos
 
   return apiFilters;
+}
+
+/**
+ * Genera un avatar aleatorio usando DiceBear API con un seed
+ */
+export function generateRandomAvatar(seed: string): string {
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
 }

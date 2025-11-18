@@ -51,6 +51,7 @@ export interface ApiProduct {
   categoryId: number;
   userId: string;
   userName: string;
+  condition: string;
   images: ApiProductImage[];
   status?: 'ACTIVE' | 'SOLD' | 'INACTIVE';
   createdAt: string;
@@ -59,7 +60,7 @@ export interface ApiProduct {
 
 // Filter types
 export interface ProductFilters {
-  category?: string;
+  categoryId?: number;
   priceMin?: number;
   priceMax?: number;
   condition?: 'new' | 'used';

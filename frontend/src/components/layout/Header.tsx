@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { Button } from '../ui';
 import type { Theme } from '../../types';
@@ -6,7 +7,7 @@ import type { Theme } from '../../types';
 interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onSearchSubmit?: (query: string) => void;
+  onSearchSubmit?: () => void;
   isAuthenticated?: boolean;
   user?: {
     name: string;
@@ -20,7 +21,7 @@ interface HeaderProps {
   onLoginClick?: () => void;
   onRegisterClick?: () => void;
   onSellClick?: () => void;
-  onProfileClick?: () => void;
+  onDashboardClick?: () => void;
   onLogoutClick?: () => void;
 }
 
@@ -37,14 +38,31 @@ const Header = ({
   onLoginClick,
   onRegisterClick,
   onSellClick,
-  onProfileClick,
+  onDashboardClick,
   onLogoutClick
 }: HeaderProps) => {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearchSubmit?.(searchQuery);
+    if (searchQuery.trim()) {
+      navigate(`/search?query=${encodeURIComponent(searchQuery.trim())}`);
+    }
   };
 
   return (
@@ -75,7 +93,7 @@ const Header = ({
                   onChange={(e) => onSearchChange(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      handleSearchSubmit(e);
+                      onSearchSubmit?.();
                     }
                   }}
                   className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-colors"
@@ -111,34 +129,43 @@ const Header = ({
                     Moderar
                   </Button>
                 )}
-                <div className="relative group">
+                <div className="relative group" ref={dropdownRef}>
                   <div
-                    className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[var(--color-border)] flex items-center justify-center cursor-pointer"
-                    onClick={onProfileClick}
+                    className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[var(--color-border)] flex items-center justify-center cursor-pointer overflow-hidden"
+                    onClick={() => setShowUserDropdown(!showUserDropdown)}
                   >
-                    <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                      {user?.name?.charAt(0).toUpperCase()}
-                    </span>
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                        {user?.name?.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   {/* Dropdown Menu */}
-                  <div className="absolute right-0 mt-2 w-48 bg-[var(--color-surface)] rounded-md shadow-lg border border-[var(--color-border)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className={`absolute right-0 mt-2 w-48 bg-[var(--color-surface)] rounded-md shadow-lg border border-[var(--color-border)] transition-all duration-200 z-50 ${
+                    showUserDropdown ? 'opacity-100 visible' : 'md:group-hover:opacity-100 md:group-hover:visible opacity-0 invisible'
+                  }`}>
                     <div className="py-1">
                       <button
-                        onClick={onSellClick}
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          onSellClick?.();
+                        }}
                         className="block w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-hover)] transition-colors font-medium"
                         style={{ color: 'var(--color-primary)' }}
                       >
                         Vender
                       </button>
                       <button
-                        onClick={onProfileClick}
-                        className="block w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-hover)] transition-colors"
-                        style={{ color: 'var(--color-text-primary)' }}
-                      >
-                        Ver Perfil Público
-                      </button>
-                      <button
-                        onClick={() => console.log('Panel de Usuario')}
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          onDashboardClick?.();
+                        }}
                         className="block w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-hover)] transition-colors"
                         style={{ color: 'var(--color-text-primary)' }}
                       >
@@ -146,7 +173,10 @@ const Header = ({
                       </button>
                       <div className="border-t border-[var(--color-border)] my-1"></div>
                       <button
-                        onClick={onLogoutClick}
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          onLogoutClick?.();
+                        }}
                         className="block w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-hover)] transition-colors"
                         style={{ color: 'var(--color-text-primary)' }}
                       >
@@ -161,7 +191,6 @@ const Header = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="hidden md:flex"
                   onClick={onLoginClick}
                 >
                   Iniciar Sesión
@@ -169,6 +198,7 @@ const Header = ({
                 <Button
                   variant="primary"
                   size="sm"
+                  className="hidden md:flex"
                   onClick={onRegisterClick}
                 >
                   Registrarse
@@ -190,11 +220,6 @@ const Header = ({
               placeholder="Buscar productos..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearchSubmit(e);
-                }
-              }}
               autoFocus
               className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-colors"
               style={{
@@ -210,7 +235,7 @@ const Header = ({
       {/* Floating Theme Toggle Button */}
       <button
         onClick={onThemeToggle}
-        className="fixed bottom-20 right-6 z-50 w-12 h-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
+        className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 w-12 h-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
         style={{
           backgroundColor: 'var(--color-surface)',
           border: `2px solid var(--color-border)`,

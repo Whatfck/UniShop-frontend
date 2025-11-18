@@ -8,6 +8,7 @@ interface ProductGridProps {
   onFavoriteToggle?: (productId: string) => void;
   onContact?: (product: Product) => void;
   showContactButton?: boolean;
+  isAuthenticated?: boolean;
 }
 
 const ProductGrid = ({
@@ -16,7 +17,8 @@ const ProductGrid = ({
   onProductClick,
   onFavoriteToggle,
   onContact,
-  showContactButton = true
+  showContactButton = true,
+  isAuthenticated = false
 }: ProductGridProps) => {
   if (isLoading) {
     // Skeleton loading
@@ -100,6 +102,7 @@ const ProductGrid = ({
           onFavoriteToggle={() => onFavoriteToggle?.(product.id)}
           onContact={() => onContact?.(product)}
           showContactButton={showContactButton}
+          isAuthenticated={isAuthenticated}
         />
       ))}
     </div>

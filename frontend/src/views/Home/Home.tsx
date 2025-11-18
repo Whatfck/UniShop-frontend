@@ -1,42 +1,43 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { Header, Footer } from '../../components/layout';
 import { HeroSection } from '../../components/features/home';
 import { FilterPanel } from '../../components/features/search';
 import { ProductGrid } from '../../components/features/product';
+import { Button } from '../../components/ui';
+import Modal from '../../components/ui/Modal';
 import LoginModal from '../../components/auth/LoginModal';
 import RegisterModal from '../../components/auth/RegisterModal';
 import { useTheme } from '../../hooks';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Product, ProductFilters } from '../../types';
 import { apiService } from '../../services/api';
-import { transformApiProduct, transformFiltersToApi } from '../../utils/apiTransformers';
+import { transformApiProduct } from '../../utils/apiTransformers';
 
 const Home = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [headerSearchQuery, setHeaderSearchQuery] = useState('');
   const [filters, setFilters] = useState<ProductFilters>({});
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 20; // 20 productos por página (4 filas x 5 columnas)
   const { user, isAuthenticated, login, register, logout } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [pendingProductId, setPendingProductId] = useState<string | null>(null);
   const [hasProductsForSale, setHasProductsForSale] = useState(false);
   const { theme, resolvedTheme, toggleTheme } = useTheme();
 
-  const fetchProducts = async (search?: string, filters?: ProductFilters) => {
+  const fetchProducts = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const apiFilters = transformFiltersToApi({
-        ...filters,
-        search,
-      });
-
-      const apiProducts = await apiService.getProducts(apiFilters);
+      const apiProducts = await apiService.getProducts();
       const transformedProducts = apiProducts.map(transformApiProduct);
 
       setProducts(transformedProducts);
@@ -84,15 +85,6 @@ const Home = () => {
     }
   }, [isAuthenticated, pendingProductId, navigate]);
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    fetchProducts(query, filters);
-  };
-
-  const handleFiltersChange = (newFilters: ProductFilters) => {
-    setFilters(newFilters);
-    fetchProducts(searchQuery, newFilters);
-  };
 
   const handleProductClick = (product: Product) => {
     console.log('Product clicked:', product);
@@ -126,18 +118,14 @@ const Home = () => {
   };
 
   const handleStartShopping = () => {
-    // Scroll to products section
-    const productsSection = document.querySelector('main');
-    if (productsSection) {
-      productsSection.scrollIntoView({ behavior: 'smooth' });
-    }
+    // Scroll to just after the hero section
+    window.scrollTo({ top: window.innerHeight - 25, behavior: 'smooth' });
   };
 
   const handleSellProduct = () => {
     // Scroll to top and trigger registration
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // TODO: Open registration modal
-    console.log('Open registration for selling products');
+    setShowRegisterModal(true);
   };
 
   const handleLogin = () => {
@@ -163,21 +151,143 @@ const Home = () => {
     console.log('Navigate to sell product page');
   };
 
-  const handleProfileClick = () => {
-    // TODO: Navigate to profile page
-    console.log('Navigate to profile page');
+
+  const handleDashboardClick = () => {
+    navigate('/dashboard');
   };
 
   const handleLogoutClick = () => {
     logout();
   };
 
+  const handleHeaderSearchChange = (query: string) => {
+    setHeaderSearchQuery(query);
+  };
+
+  const handleHeaderSearchSubmit = () => {
+    const query = headerSearchQuery.trim();
+    navigate(`/search${query ? '?query=' + encodeURIComponent(query) : ''}`);
+  };
+
+  const handleFiltersChange = (newFilters: ProductFilters) => {
+    setFilters(newFilters);
+    setCurrentPage(1); // Reset to first page when filters change
+    // Build URL params for filters
+    const params = new URLSearchParams();
+    if (newFilters.categoryId) params.set('categoryId', newFilters.categoryId.toString());
+    if (newFilters.priceMin) params.set('minPrice', newFilters.priceMin.toString());
+    if (newFilters.priceMax) params.set('maxPrice', newFilters.priceMax.toString());
+    if (newFilters.condition) params.set('condition', newFilters.condition);
+    if (newFilters.datePosted) params.set('datePosted', newFilters.datePosted);
+    const paramString = params.toString();
+  };
+
+  // Filter products based on current filters
+  const getFilteredProducts = () => {
+    return products.filter(product => {
+      // Category filter
+      if (filters.categoryId && product.category !== filters.categoryId.toString()) {
+        return false;
+      }
+
+      // Price filters
+      if (filters.priceMin && product.price < filters.priceMin) {
+        return false;
+      }
+      if (filters.priceMax && product.price > filters.priceMax) {
+        return false;
+      }
+
+      // Condition filter
+      if (filters.condition && product.condition !== filters.condition) {
+        return false;
+      }
+
+      // Date posted filter
+      if (filters.datePosted) {
+        const now = new Date();
+        const productDate = new Date(product.createdAt);
+        const diffTime = now.getTime() - productDate.getTime();
+        const diffDays = diffTime / (1000 * 3600 * 24);
+
+        switch (filters.datePosted) {
+          case 'today':
+            if (diffDays > 1) return false;
+            break;
+          case 'week':
+            if (diffDays > 7) return false;
+            break;
+          case 'month':
+            if (diffDays > 30) return false;
+            break;
+        }
+      }
+
+      return true;
+    });
+  };
+
+  // Get filtered products
+  const filteredProducts = getFilteredProducts();
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+  const startIndex = (currentPage - 1) * productsPerPage;
+  const endIndex = startIndex + productsPerPage;
+  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
+
+  // Generate pagination pages with ellipsis for large page counts
+  const getPaginationPages = () => {
+    const pages: (number | string)[] = [];
+    const delta = 2; // Number of pages to show around current page
+
+    // Always show first page
+    if (1 < currentPage - delta) {
+      pages.push(1);
+      if (2 < currentPage - delta) {
+        pages.push('...');
+      }
+    }
+
+    // Show pages around current page
+    for (let i = Math.max(1, currentPage - delta); i <= Math.min(totalPages, currentPage + delta); i++) {
+      pages.push(i);
+    }
+
+    // Always show last page
+    if (totalPages > currentPage + delta) {
+      if (totalPages - 1 > currentPage + delta) {
+        pages.push('...');
+      }
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
       <Header
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onSearchSubmit={handleSearch}
+        searchQuery={headerSearchQuery}
+        onSearchChange={handleHeaderSearchChange}
+        onSearchSubmit={handleHeaderSearchSubmit}
         isAuthenticated={isAuthenticated}
         user={user || undefined}
         hasProductsForSale={hasProductsForSale}
@@ -187,7 +297,7 @@ const Home = () => {
         onLoginClick={handleLogin}
         onRegisterClick={handleRegister}
         onSellClick={handleSellClick}
-        onProfileClick={handleProfileClick}
+        onDashboardClick={handleDashboardClick}
         onLogoutClick={handleLogoutClick}
       />
 
@@ -201,32 +311,207 @@ const Home = () => {
       )}
 
       <main className="max-w-full mx-auto py-8" style={{ paddingLeft: 'var(--container-padding)', paddingRight: 'var(--container-padding)' }}>
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filters Panel - Only show if authenticated */}
-          {isAuthenticated && (
-            <aside className="w-full lg:w-80 flex-shrink-0 order-2 lg:order-1">
+        {isAuthenticated ? (
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Filters Panel - Only for authenticated users - Hidden on mobile */}
+            <aside className="hidden lg:block w-full lg:w-80 flex-shrink-0">
               <FilterPanel
                 filters={filters}
                 onFiltersChange={handleFiltersChange}
               />
             </aside>
-          )}
 
-          {/* Products Grid */}
-          <div className={`${isAuthenticated ? 'flex-1 order-1 lg:order-2' : 'w-full'}`}>
+            {/* Products Grid */}
+            <div className="flex-1">
+              {/* Mobile Filters Button */}
+              <div className="lg:hidden mb-4">
+                <Button
+                  onClick={() => setShowFiltersModal(true)}
+                  className="w-full flex items-center justify-center gap-2"
+                  variant="outline"
+                >
+                  <Filter className="h-4 w-4" />
+                  Filtros
+                </Button>
+              </div>
+              <ProductGrid
+                products={currentProducts}
+                isLoading={isLoading}
+                onProductClick={handleProductClick}
+                onFavoriteToggle={handleFavoriteToggle}
+                onContact={handleContact}
+                showContactButton={false}
+                isAuthenticated={isAuthenticated}
+              />
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-8">
+                  <div className="text-center mb-4">
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                      Página {currentPage} de {totalPages} • {filteredProducts.length} productos encontrados
+                    </p>
+                  </div>
+                  <div className="flex justify-center items-center gap-2">
+                    <button
+                      onClick={handlePrevPage}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 border border-[var(--color-border)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-surface)] transition-colors flex items-center gap-1"
+                      style={{ color: 'var(--color-text-primary)' }}
+                      aria-label="Página anterior"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+
+                    <div className="flex gap-1">
+                      {getPaginationPages().map((page, index) => {
+                        if (page === '...') {
+                          return (
+                            <span
+                              key={`ellipsis-${index}`}
+                              className="px-3 py-2 text-[var(--color-text-secondary)]"
+                            >
+                              ...
+                            </span>
+                          );
+                        }
+
+                        const pageNum = page as number;
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`px-3 py-2 border rounded-lg transition-colors ${
+                              currentPage === pageNum
+                                ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                                : 'border-[var(--color-border)] hover:bg-[var(--color-surface)]'
+                            }`}
+                            style={{ color: currentPage === pageNum ? 'white' : 'var(--color-text-primary)' }}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={handleNextPage}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 border border-[var(--color-border)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-surface)] transition-colors flex items-center gap-1"
+                      style={{ color: 'var(--color-text-primary)' }}
+                      aria-label="Página siguiente"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="mb-6 text-center">
+              <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                Productos Destacados
+              </h2>
+              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                Inicia sesión para ver más productos y usar filtros avanzados
+              </p>
+            </div>
             <ProductGrid
-              products={products}
+              products={currentProducts}
               isLoading={isLoading}
               onProductClick={handleProductClick}
               onFavoriteToggle={handleFavoriteToggle}
               onContact={handleContact}
-              showContactButton={!isAuthenticated}
+              showContactButton={true}
+              isAuthenticated={isAuthenticated}
             />
+
+            {/* Pagination Controls for non-authenticated users */}
+            {totalPages > 1 && (
+              <div className="mt-8">
+                <div className="text-center mb-4">
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    Página {currentPage} de {totalPages} • {filteredProducts.length} productos encontrados
+                  </p>
+                </div>
+                <div className="flex justify-center items-center gap-2">
+                  <button
+                    onClick={handlePrevPage}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 border border-[var(--color-border)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-surface)] transition-colors flex items-center gap-1"
+                    style={{ color: 'var(--color-text-primary)' }}
+                    aria-label="Página anterior"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+
+                  <div className="flex gap-1">
+                    {getPaginationPages().map((page, index) => {
+                      if (page === '...') {
+                        return (
+                          <span
+                            key={`ellipsis-${index}`}
+                            className="px-3 py-2 text-[var(--color-text-secondary)]"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+
+                      const pageNum = page as number;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-3 py-2 border rounded-lg transition-colors ${
+                            currentPage === pageNum
+                              ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                              : 'border-[var(--color-border)] hover:bg-[var(--color-surface)]'
+                          }`}
+                          style={{ color: currentPage === pageNum ? 'white' : 'var(--color-text-primary)' }}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 border border-[var(--color-border)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-surface)] transition-colors flex items-center gap-1"
+                    style={{ color: 'var(--color-text-primary)' }}
+                    aria-label="Página siguiente"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </main>
 
       <Footer />
+
+      {/* Filters Modal for Mobile */}
+      <Modal
+        isOpen={showFiltersModal}
+        onClose={() => setShowFiltersModal(false)}
+        title="Filtros"
+      >
+        <div className="p-4">
+          <FilterPanel
+            filters={filters}
+            onFiltersChange={(newFilters) => {
+              handleFiltersChange(newFilters);
+              setShowFiltersModal(false); // Close modal after applying filters
+            }}
+          />
+        </div>
+      </Modal>
 
       {/* Auth Modals */}
       <LoginModal

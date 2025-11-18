@@ -12,6 +12,7 @@ interface ProductCardProps {
   onClick?: () => void;
   priority?: 'high' | 'low';
   showContactButton?: boolean;
+  isAuthenticated?: boolean;
 }
 
 const ProductCard = ({
@@ -21,7 +22,8 @@ const ProductCard = ({
   onContact,
   onClick,
   priority = 'low',
-  showContactButton = false
+  showContactButton = false,
+  isAuthenticated = false
 }: ProductCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -100,9 +102,8 @@ const ProductCard = ({
         <div
           className="absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-medium"
           style={{
-            backgroundColor: product.condition === 'new' ? 'var(--color-success)' : 'var(--color-surface)',
-            color: product.condition === 'new' ? 'white' : 'var(--color-text-primary)',
-            border: `1px solid var(--color-border)`
+            backgroundColor: product.condition === 'new' ? 'var(--color-secondary)' : 'var(--color-border)',
+            color: product.condition === 'new' ? 'white' : 'var(--color-text-primary)'
           }}
         >
           {product.condition === 'new' ? 'Nuevo' : 'Usado'}
@@ -135,21 +136,24 @@ const ProductCard = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2">
-          <div
-            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-w-0 flex-1"
-            style={{ color: 'var(--color-text-secondary)' }}
-          >
-            <span className="truncate">{product.seller.name}</span>
-          </div>
-          <div
-            className="flex items-center gap-1 text-xs flex-shrink-0"
-            style={{ color: 'var(--color-text-secondary)' }}
-          >
-            <Clock className="h-3 w-3 flex-shrink-0" />
-            <span className="hidden sm:inline">{new Date(product.createdAt).toLocaleDateString('es-CO')}</span>
-            <span className="sm:hidden">{new Date(product.createdAt).toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })}</span>
-          </div>
+        <div className="flex items-center justify-start gap-2">
+          {!isAuthenticated ? (
+            <div
+              className="flex items-center gap-1 text-xs flex-shrink-0"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              <Clock className="h-3 w-3 flex-shrink-0" />
+              <span className="hidden sm:inline">{new Date(product.createdAt).toLocaleDateString('es-CO')}</span>
+              <span className="sm:hidden">{new Date(product.createdAt).toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })}</span>
+            </div>
+          ) : (
+            <div
+              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-w-0 flex-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              <span className="truncate">{product.seller.name}</span>
+            </div>
+          )}
         </div>
 
         {showContactButton && (

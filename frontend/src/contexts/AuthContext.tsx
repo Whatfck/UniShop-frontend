@@ -2,13 +2,16 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { apiService } from '../services/api';
 import type { AuthResponse } from '../services/api';
+import { generateRandomAvatar } from '../utils/apiTransformers';
 
 interface User {
   id: string;
   name: string;
   email: string;
+  avatar?: string;
   role: 'USER' | 'MODERATOR' | 'ADMIN';
-  profilePictureUrl?: string;
+  phoneVerified: boolean;
+  createdAt: Date;
 }
 
 interface AuthContextType {
@@ -45,7 +48,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       const userData = await apiService.getProfile();
-      setUser(userData);
+      // Transform user data with avatar
+      const transformedUser: User = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        avatar: generateRandomAvatar(userData.id),
+        phoneVerified: false, // Default value
+        createdAt: new Date(), // Default value
+      };
+      setUser(transformedUser);
     } catch (error) {
       // Token is invalid, remove it
       apiService.removeToken();
@@ -63,8 +76,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Store token
       apiService.setToken(response.access_token);
 
+      // Transform user data with avatar
+      const transformedUser: User = {
+        id: response.user.id,
+        name: response.user.name,
+        email: response.user.email,
+        role: response.user.role,
+        avatar: generateRandomAvatar(response.user.id),
+        phoneVerified: false, // Default value
+        createdAt: new Date(), // Default value
+      };
+
       // Set user data
-      setUser(response.user);
+      setUser(transformedUser);
     } catch (error) {
       throw error;
     } finally {
@@ -80,8 +104,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Store token
       apiService.setToken(response.access_token);
 
+      // Transform user data with avatar
+      const transformedUser: User = {
+        id: response.user.id,
+        name: response.user.name,
+        email: response.user.email,
+        role: response.user.role,
+        avatar: generateRandomAvatar(response.user.id),
+        phoneVerified: false, // Default value
+        createdAt: new Date(), // Default value
+      };
+
       // Set user data
-      setUser(response.user);
+      setUser(transformedUser);
     } catch (error) {
       throw error;
     } finally {

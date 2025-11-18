@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Heart, MessageCircle, MapPin, Clock, Share2, Flag } from 'lucide-react';
+import { Heart, MessageCircle, MapPin, Clock, Share2, Flag, ArrowLeft, ChevronRight, ExternalLink, Package, Star } from 'lucide-react';
 import { Header } from '../../components/layout';
 import { Button } from '../../components/ui';
 import { useTheme } from '../../hooks';
@@ -15,8 +15,9 @@ const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { theme, resolvedTheme, toggleTheme } = useTheme();
-  const { user, isAuthenticated, login, register, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isFavorited, setIsFavorited] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,6 +48,15 @@ const ProductDetail = () => {
         const transformedProduct = transformApiProduct(apiProduct);
         setProduct(transformedProduct);
         setIsFavorited(transformedProduct.isFavorited || false);
+
+        // Preload all images
+        transformedProduct.images.forEach(image => {
+          const img = new Image();
+          img.src = image;
+        });
+
+        // Load related products
+        loadRelatedProducts(transformedProduct.id);
       } catch (apiError) {
         console.error('Error fetching product:', apiError);
         setError('Error al cargar el producto. Verifica que el backend esté ejecutándose.');
@@ -130,13 +140,30 @@ const ProductDetail = () => {
     console.log('Navigate to sell product page');
   };
 
-  const handleProfileClick = () => {
-    // TODO: Navigate to profile page
-    console.log('Navigate to profile page');
+
+  const handleDashboardClick = () => {
+    navigate('/dashboard');
   };
 
   const handleLogoutClick = () => {
     logout();
+  };
+
+  const loadRelatedProducts = async (currentProductId: string) => {
+    try {
+      const allProducts = await apiService.getProducts();
+      const otherProducts = allProducts.filter(p => String(p.id) !== currentProductId);
+
+      // Shuffle array and take first 5
+      const shuffled = otherProducts.sort(() => 0.5 - Math.random());
+      const selectedProducts = shuffled.slice(0, 5);
+
+      const transformedProducts = selectedProducts.map(transformApiProduct);
+      setRelatedProducts(transformedProducts);
+    } catch (error) {
+      console.error('Error loading related products:', error);
+      setRelatedProducts([]);
+    }
   };
 
   // Advanced gesture handlers
@@ -459,17 +486,18 @@ const ProductDetail = () => {
         onLoginClick={handleLogin}
         onRegisterClick={handleRegister}
         onSellClick={handleSellClick}
-        onProfileClick={handleProfileClick}
+        onDashboardClick={handleDashboardClick}
         onLogoutClick={handleLogoutClick}
       />
 
+
       <main className="max-w-full mx-auto py-8" style={{ paddingLeft: 'var(--container-padding)', paddingRight: 'var(--container-padding)' }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Product Images */}
-          <div className="space-y-4">
+          <div className="lg:w-1/2 lg:mx-auto lg:self-center">
             {/* Advanced Image Viewer */}
             <div
-              className={`relative aspect-square rounded-xl overflow-hidden bg-[var(--color-border)] select-none ${
+              className={`relative aspect-square lg:max-h-[87vh] rounded-xl overflow-hidden bg-[var(--color-border)] select-none ${
                 isZoomed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
               }`}
               onMouseDown={handleMouseDown}
@@ -547,6 +575,7 @@ const ProductDetail = () => {
               )}
             </div>
 
+
           </div>
 
           {/* Product Information */}
@@ -565,8 +594,8 @@ const ProductDetail = () => {
             <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                 product.condition === 'new'
-                  ? 'bg-[var(--color-success)] text-white'
-                  : 'bg-[var(--color-border)] text-[var(--color-text-primary)]'
+                  ? 'bg-[var(--color-secondary)] text-white'
+                  : 'bg-[var(--color-surface)] text-[var(--color-text-primary)]'
               }`}>
                 {product.condition === 'new' ? 'Nuevo' : 'Usado'}
               </span>
@@ -620,6 +649,14 @@ const ProductDetail = () => {
                   </div>
                 </div>
               </div>
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/profile/${product.seller.id}`)}
+                className="w-full mt-3 flex items-center gap-2"
+              >
+                <Package className="h-4 w-4" />
+                Ver todos los productos del vendedor
+              </Button>
             </div>
 
             {/* Action Buttons */}
@@ -652,6 +689,46 @@ const ProductDetail = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Related Products Carousel */}
+            {relatedProducts.length > 0 && (
+              <div className="mt-6">
+                <h3 className="font-semibold mb-4 text-lg" style={{ color: 'var(--color-text-primary)' }}>
+                  Productos Relacionados
+                </h3>
+                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                  {relatedProducts.map((relatedProduct) => (
+                    <div
+                      key={relatedProduct.id}
+                      onClick={() => navigate(`/product/${relatedProduct.id}`)}
+                      className="flex-shrink-0 w-40 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                    >
+                      <div className="aspect-square bg-[var(--color-border)] overflow-hidden">
+                        {relatedProduct.images && relatedProduct.images.length > 0 ? (
+                          <img
+                            src={relatedProduct.images[0]}
+                            alt={relatedProduct.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">Sin imagen</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <h4 className="font-medium text-sm mb-1 line-clamp-2" style={{ color: 'var(--color-text-primary)' }}>
+                          {relatedProduct.title}
+                        </h4>
+                        <p className="text-sm font-bold" style={{ color: 'var(--color-primary)' }}>
+                          ${relatedProduct.price.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Tags */}
             {product.tags && product.tags.length > 0 && (

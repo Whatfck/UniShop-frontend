@@ -23,6 +23,7 @@ export interface ApiProduct {
   categoryId: number;
   userId: string;
   userName: string;
+  condition: string;
   images: ApiProductImage[];
   status: 'ACTIVE' | 'SOLD' | 'INACTIVE';
   createdAt: string;
