@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Filter, ArrowUp, SortAsc } from 'lucide-react';
 import { Header, Footer } from '../../components/layout';
 import { HeroSection } from '../../components/features/home';
 import { FilterPanel } from '../../components/features/search';
@@ -28,8 +28,11 @@ const Home = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showFiltersModal, setShowFiltersModal] = useState(false);
+  const [showSortModal, setShowSortModal] = useState(false);
   const [pendingProductId, setPendingProductId] = useState<string | null>(null);
   const [hasProductsForSale, setHasProductsForSale] = useState(false);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'price-low' | 'price-high'>('newest');
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const { theme, resolvedTheme, toggleTheme } = useTheme();
 
   const fetchProducts = async () => {
@@ -38,7 +41,22 @@ const Home = () => {
       setError(null);
 
       const apiProducts = await apiService.getProducts();
-      const transformedProducts = apiProducts.map(transformApiProduct);
+      let transformedProducts = apiProducts.map(transformApiProduct);
+
+      // If user is authenticated, check which products are favorited
+      if (isAuthenticated && user) {
+        try {
+          const favorites = await apiService.getFavorites();
+          const favoriteIds = new Set(favorites.map(fav => Number(fav.id)));
+          transformedProducts = transformedProducts.map(product => ({
+            ...product,
+            isFavorited: favoriteIds.has(Number(product.id))
+          }));
+        } catch (favError) {
+          console.error('Error fetching favorites:', favError);
+          // Continue without favorites if there's an error
+        }
+      }
 
       setProducts(transformedProducts);
     } catch (err) {
@@ -52,7 +70,7 @@ const Home = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [isAuthenticated, user]);
 
   // Check if user has products for sale when authenticated
   useEffect(() => {
@@ -85,6 +103,16 @@ const Home = () => {
     }
   }, [isAuthenticated, pendingProductId, navigate]);
 
+  // Handle scroll for "back to top" button
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
 
   const handleProductClick = (product: Product) => {
     console.log('Product clicked:', product);
@@ -98,12 +126,19 @@ const Home = () => {
     }
   };
 
-  const handleFavoriteToggle = (productId: string) => {
-    setProducts(prev => prev.map(product =>
-      product.id === productId
-        ? { ...product, isFavorited: !product.isFavorited }
-        : product
-    ));
+  const handleFavoriteToggle = async (productId: string) => {
+    try {
+      await apiService.toggleFavorite(Number(productId));
+      // Update local state
+      setProducts(prev => prev.map(product =>
+        product.id === productId
+          ? { ...product, isFavorited: !product.isFavorited }
+          : product
+      ));
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // TODO: Show error toast
+    }
   };
 
   const handleContact = async (product: Product) => {
@@ -119,7 +154,7 @@ const Home = () => {
 
   const handleStartShopping = () => {
     // Scroll to just after the hero section
-    window.scrollTo({ top: window.innerHeight - 25, behavior: 'smooth' });
+    window.scrollTo({ top: window.innerHeight - 40, behavior: 'smooth' });
   };
 
   const handleSellProduct = () => {
@@ -182,9 +217,18 @@ const Home = () => {
     const paramString = params.toString();
   };
 
-  // Filter products based on current filters
-  const getFilteredProducts = () => {
-    return products.filter(product => {
+  const handleSortChange = (newSortBy: 'newest' | 'oldest' | 'price-low' | 'price-high') => {
+    setSortBy(newSortBy);
+    setCurrentPage(1); // Reset to first page when sort changes
+  };
+
+  const handleScrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Filter and sort products based on current filters and sort options
+  const getFilteredAndSortedProducts = () => {
+    let filtered = products.filter(product => {
       // Category filter
       if (filters.categoryId && product.category !== filters.categoryId.toString()) {
         return false;
@@ -225,15 +269,33 @@ const Home = () => {
 
       return true;
     });
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'oldest':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'price-low':
+          return a.price - b.price;
+        case 'price-high':
+          return b.price - a.price;
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
   };
 
-  // Get filtered products
-  const filteredProducts = getFilteredProducts();
+  // Get filtered and sorted products
+  const filteredProducts = getFilteredAndSortedProducts();
 
-  // Pagination logic
-  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
-  const startIndex = (currentPage - 1) * productsPerPage;
-  const endIndex = startIndex + productsPerPage;
+  // Pagination logic - only for authenticated users
+  const totalPages = isAuthenticated ? Math.ceil(filteredProducts.length / productsPerPage) : 1;
+  const startIndex = isAuthenticated ? (currentPage - 1) * productsPerPage : 0;
+  const endIndex = isAuthenticated ? startIndex + productsPerPage : productsPerPage;
   const currentProducts = filteredProducts.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
@@ -310,7 +372,7 @@ const Home = () => {
         />
       )}
 
-      <main className="max-w-full mx-auto py-8" style={{ paddingLeft: 'var(--container-padding)', paddingRight: 'var(--container-padding)' }}>
+      <main className="max-w-full mx-auto py-4" style={{ paddingLeft: 'var(--container-padding)', paddingRight: 'var(--container-padding)' }}>
         {isAuthenticated ? (
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Filters Panel - Only for authenticated users - Hidden on mobile */}
@@ -323,16 +385,52 @@ const Home = () => {
 
             {/* Products Grid */}
             <div className="flex-1">
-              {/* Mobile Filters Button */}
+              {/* Mobile Controls */}
               <div className="lg:hidden mb-4">
-                <Button
-                  onClick={() => setShowFiltersModal(true)}
-                  className="w-full flex items-center justify-center gap-2"
-                  variant="outline"
-                >
-                  <Filter className="h-4 w-4" />
-                  Filtros
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setShowFiltersModal(true)}
+                    className="flex-1 flex items-center justify-center gap-2"
+                    variant="outline"
+                  >
+                    <Filter className="h-4 w-4" />
+                    Filtros
+                  </Button>
+                  <Button
+                    onClick={() => setShowSortModal(true)}
+                    className="flex-1 flex items-center justify-center gap-2"
+                    variant="outline"
+                  >
+                    <SortAsc className="h-4 w-4" />
+                    Ordenar
+                  </Button>
+                </div>
+              </div>
+
+              {/* Sort Controls - Desktop Only */}
+              <div className="hidden lg:flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                  <SortAsc className="h-4 w-4" style={{ color: 'var(--color-text-secondary)' }} />
+                  <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                    Ordenar por:
+                  </span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => handleSortChange(e.target.value as 'newest' | 'oldest' | 'price-low' | 'price-high')}
+                    className="px-3 py-1 border border-[var(--color-border)] rounded-md text-sm bg-[var(--color-surface)]"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
+                    <option value="newest">Más recientes</option>
+                    <option value="oldest">Más antiguos</option>
+                    <option value="price-low">Precio: menor a mayor</option>
+                    <option value="price-high">Precio: mayor a menor</option>
+                  </select>
+                </div>
+
+                {/* Results count */}
+                <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
+                </div>
               </div>
               <ProductGrid
                 products={currentProducts}
@@ -410,14 +508,16 @@ const Home = () => {
           </div>
         ) : (
           <div>
-            <div className="mb-6 text-center">
+            <div className="mb-2 text-center">
               <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
                 Productos Destacados
               </h2>
               <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                Inicia sesión para ver más productos y usar filtros avanzados
+                Inicia sesión para acceder a todos los productos, filtros avanzados y opciones de ordenamiento
               </p>
             </div>
+
+
             <ProductGrid
               products={currentProducts}
               isLoading={isLoading}
@@ -428,71 +528,20 @@ const Home = () => {
               isAuthenticated={isAuthenticated}
             />
 
-            {/* Pagination Controls for non-authenticated users */}
-            {totalPages > 1 && (
-              <div className="mt-8">
-                <div className="text-center mb-4">
-                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                    Página {currentPage} de {totalPages} • {filteredProducts.length} productos encontrados
-                  </p>
-                </div>
-                <div className="flex justify-center items-center gap-2">
-                  <button
-                    onClick={handlePrevPage}
-                    disabled={currentPage === 1}
-                    className="px-3 py-2 border border-[var(--color-border)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-surface)] transition-colors flex items-center gap-1"
-                    style={{ color: 'var(--color-text-primary)' }}
-                    aria-label="Página anterior"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-
-                  <div className="flex gap-1">
-                    {getPaginationPages().map((page, index) => {
-                      if (page === '...') {
-                        return (
-                          <span
-                            key={`ellipsis-${index}`}
-                            className="px-3 py-2 text-[var(--color-text-secondary)]"
-                          >
-                            ...
-                          </span>
-                        );
-                      }
-
-                      const pageNum = page as number;
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => handlePageChange(pageNum)}
-                          className={`px-3 py-2 border rounded-lg transition-colors ${
-                            currentPage === pageNum
-                              ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
-                              : 'border-[var(--color-border)] hover:bg-[var(--color-surface)]'
-                          }`}
-                          style={{ color: currentPage === pageNum ? 'white' : 'var(--color-text-primary)' }}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <button
-                    onClick={handleNextPage}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-2 border border-[var(--color-border)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-surface)] transition-colors flex items-center gap-1"
-                    style={{ color: 'var(--color-text-primary)' }}
-                    aria-label="Página siguiente"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </main>
+
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={handleScrollToTop}
+          className="fixed bottom-6 right-6 p-3 bg-[var(--color-primary)] text-white rounded-full shadow-lg hover:bg-[var(--color-primary-hover)] transition-colors z-40"
+          aria-label="Volver arriba"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </button>
+      )}
 
       <Footer />
 
@@ -510,6 +559,42 @@ const Home = () => {
               setShowFiltersModal(false); // Close modal after applying filters
             }}
           />
+        </div>
+      </Modal>
+
+      {/* Sort Modal for Mobile */}
+      <Modal
+        isOpen={showSortModal}
+        onClose={() => setShowSortModal(false)}
+        title="Ordenar por"
+      >
+        <div className="p-4">
+          <div className="space-y-3">
+            {[
+              { value: 'newest', label: 'Más recientes' },
+              { value: 'oldest', label: 'Más antiguos' },
+              { value: 'price-low', label: 'Precio: menor a mayor' },
+              { value: 'price-high', label: 'Precio: mayor a menor' }
+            ].map((option) => (
+              <button
+                key={option.value}
+                onClick={() => {
+                  handleSortChange(option.value as 'newest' | 'oldest' | 'price-low' | 'price-high');
+                  setShowSortModal(false);
+                }}
+                className={`w-full p-3 text-left rounded-lg border transition-colors ${
+                  sortBy === option.value
+                    ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                    : 'border-[var(--color-border)] hover:bg-[var(--color-surface)]'
+                }`}
+                style={{
+                  color: sortBy === option.value ? 'white' : 'var(--color-text-primary)'
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
       </Modal>
 

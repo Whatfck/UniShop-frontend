@@ -84,8 +84,15 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModalProps)
     <Modal isOpen={isOpen} onClose={onClose} title="Crear Cuenta" size="md">
       <form onSubmit={handleSubmit} className="space-y-6">
         {errors.general && (
-          <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-            <p className="text-sm text-red-600">{errors.general}</p>
+          <div
+            className="p-3 rounded-lg border"
+            style={{
+              backgroundColor: 'var(--color-error-hover)',
+              borderColor: 'var(--color-error)',
+              color: 'var(--color-error)'
+            }}
+          >
+            <p className="text-sm">{errors.general}</p>
           </div>
         )}
 

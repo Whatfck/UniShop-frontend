@@ -4,12 +4,20 @@
 :root {
   /* Colores primarios */
   --color-primary: #1E63D0;
+  --color-primary-hover: #1A56C2;
   --color-secondary: #FF7A33;
+  --color-secondary-hover: #E66A2B;
 
   /* Colores semánticos */
   --color-success: #10B981;
+  --color-success-hover: #059669;
   --color-warning: #F59E0B;
+  --color-warning-hover: #D97706;
   --color-error: #EF4444;
+  --color-error-hover: #DC2626;
+
+  /* Estados adicionales */
+  --color-hover: rgba(30, 99, 208, 0.1);
 
   /* Colores neutros - Modo Claro */
   --color-background: #F8F9FB;
@@ -53,20 +61,26 @@
   --color-text-primary: #F3F4F6;
   --color-text-secondary: #9CA3AF;
   --color-primary: #4D8EFF;
+  --color-primary-hover: #3B7CFF;
   --color-secondary: #FF9C4A;
+  --color-secondary-hover: #FF8A3A;
   --color-success: #34D399;
+  --color-success-hover: #10B981;
   --color-warning: #FCD34D;
+  --color-warning-hover: #FBBF24;
   --color-error: #F87171;
+  --color-error-hover: #EF4444;
   --color-border: #374151;
+  --color-hover: rgba(77, 142, 255, 0.1);
 }
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--color-primary);
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: var(--color-primary-hover, var(--color-primary));
 }
 
 body {
@@ -87,16 +101,17 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
   cursor: pointer;
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: var(--color-primary);
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 4px auto var(--color-primary);
 }
 
 /* Container padding por defecto para móvil */

@@ -39,13 +39,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
           style={{ color: 'var(--color-text-primary)' }}
         >
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-[var(--color-error)] ml-1">*</span>}
         </label>
       )}
 
       <div className="relative">
         {leftIcon && (
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }}>
             {leftIcon}
           </div>
         )}
@@ -74,7 +74,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
         />
 
         {rightIcon && (
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }}>
             {rightIcon}
           </div>
         )}
@@ -82,10 +82,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
 
       {(error || helperText) && (
         <p
-          className={cn(
-            "text-sm",
-            error ? "text-red-500" : "text-[var(--color-text-secondary)]"
-          )}
+          className="text-sm"
+          style={{ color: error ? 'var(--color-error)' : 'var(--color-text-secondary)' }}
         >
           {error || helperText}
         </p>

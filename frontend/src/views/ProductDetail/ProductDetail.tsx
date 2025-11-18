@@ -36,6 +36,11 @@ const ProductDetail = () => {
   const [lastTapTime, setLastTapTime] = useState(0);
   const [showZoomHint, setShowZoomHint] = useState(false);
 
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) return;
@@ -73,9 +78,16 @@ const ProductDetail = () => {
     resetZoom();
   }, [currentImageIndex]);
 
-  const handleFavoriteToggle = () => {
-    setIsFavorited(!isFavorited);
-    // TODO: Implement API call to toggle favorite
+  const handleFavoriteToggle = async () => {
+    if (!product) return;
+
+    try {
+      await apiService.toggleFavorite(Number(product.id));
+      setIsFavorited(!isFavorited);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // TODO: Show error toast
+    }
   };
 
   const handleContact = async () => {

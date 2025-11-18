@@ -1,30 +1,27 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Header, Footer } from '../../components/layout';
-import { FilterPanel } from '../../components/features/search';
 import { ProductGrid } from '../../components/features/product';
 import LoginModal from '../../components/auth/LoginModal';
 import RegisterModal from '../../components/auth/RegisterModal';
 import { useTheme } from '../../hooks';
 import { useAuth } from '../../contexts/AuthContext';
-import type { Product, ProductFilters } from '../../types';
+import type { Product } from '../../types';
 import { apiService } from '../../services/api';
-import { transformApiProduct, transformFiltersToApi } from '../../utils/apiTransformers';
+import { transformApiProduct } from '../../utils/apiTransformers';
+import { Heart } from 'lucide-react';
 
-const Search = () => {
-  const [searchParams] = useSearchParams();
+const Favorites = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('query') || '');
-  const [filters, setFilters] = useState<ProductFilters>({});
-  const [products, setProducts] = useState<Product[]>([]);
+  const [headerSearchQuery, setHeaderSearchQuery] = useState('');
+  const [favoriteProducts, setFavoriteProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 20; // 20 productos por página (4 filas x 5 columnas)
+  const productsPerPage = 20;
   const { user, isAuthenticated, login, register, logout } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const [pendingProductId, setPendingProductId] = useState<string | null>(null);
   const { theme, resolvedTheme, toggleTheme } = useTheme();
 
   // Scroll to top when component mounts
@@ -32,111 +29,55 @@ const Search = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  const fetchProducts = async (search?: string, filters?: ProductFilters) => {
+  const fetchFavoriteProducts = async () => {
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
-      setError(null);
-
-      const apiFilters = transformFiltersToApi({
-        ...filters,
-        search,
-      });
-
-      const apiProducts = await apiService.getProducts(apiFilters);
-      const transformedProducts = apiProducts.map(transformApiProduct);
-
-      setProducts(transformedProducts);
+      const apiFavorites = await apiService.getFavorites();
+      const transformedFavorites = apiFavorites.map(product => ({
+        ...transformApiProduct(product),
+        isFavorited: true
+      }));
+      setFavoriteProducts(transformedFavorites);
     } catch (err) {
-      console.error('Error fetching products:', err);
-      setError('Error al cargar los productos. Verifica que el backend esté ejecutándose.');
-      setProducts([]);
+      console.error('Error fetching favorite products:', err);
+      setError('Error al cargar tus favoritos. Verifica que el backend esté ejecutándose.');
+      setFavoriteProducts([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    const query = searchParams.get('query') || '';
-    setSearchQuery(query);
-  }, [searchParams]);
-
-  useEffect(() => {
-    // Initialize filters from URL params
-    const categoryId = searchParams.get('categoryId');
-    const minPrice = searchParams.get('minPrice');
-    const maxPrice = searchParams.get('maxPrice');
-    const condition = searchParams.get('condition');
-    const datePosted = searchParams.get('datePosted');
-    const initialFilters: ProductFilters = {};
-    if (categoryId) initialFilters.categoryId = parseInt(categoryId);
-    if (minPrice) initialFilters.priceMin = parseInt(minPrice);
-    if (maxPrice) initialFilters.priceMax = parseInt(maxPrice);
-    if (condition && (condition === 'new' || condition === 'used')) initialFilters.condition = condition;
-    if (datePosted && (datePosted === 'today' || datePosted === 'week' || datePosted === 'month')) initialFilters.datePosted = datePosted;
-    setFilters(initialFilters);
-  }, [searchParams]);
-
-  useEffect(() => {
-    const query = searchParams.get('query') || '';
-    fetchProducts(query, filters);
-  }, [searchParams, filters]);
-
-  const handleFiltersChange = (newFilters: ProductFilters) => {
-    setFilters(newFilters);
-    setCurrentPage(1); // Reset to first page when filters change
-  };
-
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-  };
-
-  const handleSearchSubmit = () => {
-    const query = searchQuery.trim();
-    navigate(`/search${query ? '?query=' + encodeURIComponent(query) : ''}`);
-  };
-
-  const formatSearchDescription = (params: URLSearchParams, currentFilters: ProductFilters): string => {
-    const parts: string[] = [];
-    const query = params.get('query');
-    if (query) {
-      parts.push(`"${query}"`);
+    if (isAuthenticated) {
+      fetchFavoriteProducts();
+    } else {
+      navigate('/');
     }
-    if (currentFilters.categoryId) {
-      const categories = ['Libros', 'Tecnología', 'Material de Laboratorio', 'Arquitectura', 'Útiles Escolares', 'Otros'];
-      parts.push(`Categoría: ${categories[currentFilters.categoryId - 1] || 'Desconocida'}`);
-    }
-    if (currentFilters.condition) {
-      parts.push(`Condición: ${currentFilters.condition === 'new' ? 'Nuevo' : 'Usado'}`);
-    }
-    if (currentFilters.priceMin || currentFilters.priceMax) {
-      const min = currentFilters.priceMin ? `$${currentFilters.priceMin.toLocaleString()}` : '';
-      const max = currentFilters.priceMax ? `$${currentFilters.priceMax.toLocaleString()}` : '';
-      parts.push(`Precio: ${min}${min && max ? '-' : ''}${max}`);
-    }
-    if (currentFilters.datePosted) {
-      const dateLabels = { today: 'Hoy', week: 'Esta semana', month: 'Este mes' };
-      parts.push(`Publicado: ${dateLabels[currentFilters.datePosted]}`);
-    }
-    return parts.length > 0 ? parts.join(' - ') : 'todos los productos';
-  };
+  }, [isAuthenticated, navigate]);
 
   const handleProductClick = (product: Product) => {
-    console.log('Product clicked:', product);
     if (!isAuthenticated) {
-      setPendingProductId(product.id);
       setShowLoginModal(true);
     } else {
-      // Navigate to product detail
-      window.location.href = `/product/${product.id}`;
+      navigate(`/product/${product.id}`);
     }
   };
 
-  const handleFavoriteToggle = (productId: string) => {
-    setProducts(prev => prev.map(product =>
-      product.id === productId
-        ? { ...product, isFavorited: !product.isFavorited }
-        : product
-    ));
+  const handleFavoriteToggle = async (productId: string) => {
+    if (!isAuthenticated) return;
+
+    try {
+      await apiService.toggleFavorite(Number(productId));
+      // Remove from favorites list
+      setFavoriteProducts(prev => prev.filter(product => product.id !== productId));
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
   };
 
   const handleContact = async (product: Product) => {
@@ -170,7 +111,6 @@ const Search = () => {
     console.log('Navigate to sell product page');
   };
 
-
   const handleDashboardClick = () => {
     navigate('/dashboard');
   };
@@ -179,11 +119,20 @@ const Search = () => {
     logout();
   };
 
+  const handleHeaderSearchChange = (query: string) => {
+    setHeaderSearchQuery(query);
+  };
+
+  const handleHeaderSearchSubmit = () => {
+    const query = headerSearchQuery.trim();
+    navigate(`/search${query ? '?query=' + encodeURIComponent(query) : ''}`);
+  };
+
   // Pagination logic
-  const totalPages = Math.ceil(products.length / productsPerPage);
+  const totalPages = Math.ceil(favoriteProducts.length / productsPerPage);
   const startIndex = (currentPage - 1) * productsPerPage;
   const endIndex = startIndex + productsPerPage;
-  const currentProducts = products.slice(startIndex, endIndex);
+  const currentProducts = favoriteProducts.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -202,12 +151,16 @@ const Search = () => {
     }
   };
 
+  if (!isAuthenticated) {
+    return null; // Will redirect in useEffect
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
       <Header
-        searchQuery={searchQuery}
-        onSearchChange={handleSearchChange}
-        onSearchSubmit={handleSearchSubmit}
+        searchQuery={headerSearchQuery}
+        onSearchChange={handleHeaderSearchChange}
+        onSearchSubmit={handleHeaderSearchSubmit}
         isAuthenticated={isAuthenticated}
         user={user || undefined}
         hasProductsForSale={false}
@@ -222,30 +175,53 @@ const Search = () => {
       />
 
       <main className="max-w-full mx-auto py-8" style={{ paddingLeft: 'var(--container-padding)', paddingRight: 'var(--container-padding)' }}>
-        <div className="flex flex-col lg:flex-row gap-8">
-          <aside className="w-full lg:w-80 flex-shrink-0">
-            <FilterPanel
-              filters={filters}
-              onFiltersChange={handleFiltersChange}
-            />
-          </aside>
-
-          <div className="flex-1">
-            <div className="mb-4">
-              <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-                Resultados de búsqueda
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Heart className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
+              <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                Mis Favoritos
               </h1>
-              <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-                Buscando: {formatSearchDescription(searchParams, filters)}
-              </p>
             </div>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-surface)] transition-colors font-medium"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              ← Volver al Dashboard
+            </button>
+          </div>
+
+          <p className="text-lg" style={{ color: 'var(--color-text-secondary)' }}>
+            {favoriteProducts.length} {favoriteProducts.length === 1 ? 'producto favorito' : 'productos favoritos'}
+          </p>
+        </div>
+
+        {favoriteProducts.length === 0 ? (
+          <div className="text-center py-16 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
+            <Heart className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--color-text-secondary)' }} />
+            <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              Aún no has agregado productos a favoritos
+            </h3>
+            <p className="text-sm mb-6" style={{ color: 'var(--color-text-secondary)' }}>
+              Explora productos y guarda los que te interesen para verlos aquí.
+            </p>
+            <button
+              onClick={() => navigate('/')}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-hover)] transition-colors font-medium"
+            >
+              Explorar Productos
+            </button>
+          </div>
+        ) : (
+          <>
             <ProductGrid
               products={currentProducts}
               isLoading={isLoading}
               onProductClick={handleProductClick}
               onFavoriteToggle={handleFavoriteToggle}
               onContact={handleContact}
-              showContactButton={!isAuthenticated}
+              showContactButton={true}
               isAuthenticated={isAuthenticated}
             />
 
@@ -292,12 +268,13 @@ const Search = () => {
                 </button>
               </div>
             )}
-          </div>
-        </div>
+          </>
+        )}
       </main>
 
       <Footer />
 
+      {/* Auth Modals */}
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
@@ -313,4 +290,4 @@ const Search = () => {
   );
 };
 
-export default Search;
+export default Favorites;

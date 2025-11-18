@@ -15,15 +15,23 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
   const [userProducts, setUserProducts] = useState<Product[]>([]);
+  const [favoriteProducts, setFavoriteProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingFavorites, setIsLoadingFavorites] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [favoritesPage, setFavoritesPage] = useState(1);
   const productsPerPage = 12;
   const { user, isAuthenticated, login, register, logout } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [hasProductsForSale, setHasProductsForSale] = useState(false);
   const { theme, resolvedTheme, toggleTheme } = useTheme();
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -43,7 +51,14 @@ const Dashboard = () => {
       const userProductsData = allProducts.filter(product => String(product.userId) === user.id);
       const transformedProducts = userProductsData.map(transformApiProduct);
 
-      setUserProducts(transformedProducts);
+      // Mark products that are in favorites
+      const favoriteIds = new Set(favoriteProducts.map(fav => fav.id));
+      const productsWithFavorites = transformedProducts.map(product => ({
+        ...product,
+        isFavorited: favoriteIds.has(product.id)
+      }));
+
+      setUserProducts(productsWithFavorites);
       setHasProductsForSale(transformedProducts.length > 0);
     } catch (err) {
       console.error('Error fetching user products:', err);
@@ -54,22 +69,54 @@ const Dashboard = () => {
     }
   };
 
+  const fetchFavoriteProducts = async () => {
+    try {
+      setIsLoadingFavorites(true);
+      const apiFavorites = await apiService.getFavorites();
+      const transformedFavorites = apiFavorites.map(product => ({
+        ...transformApiProduct(product),
+        isFavorited: true // Mark as favorited since they come from favorites endpoint
+      }));
+      setFavoriteProducts(transformedFavorites);
+    } catch (err) {
+      console.error('Error fetching favorite products:', err);
+      setFavoriteProducts([]);
+    } finally {
+      setIsLoadingFavorites(false);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated && user) {
-      fetchUserProducts();
+      fetchFavoriteProducts();
     }
   }, [isAuthenticated, user]);
+
+  // Fetch user products after favorites are loaded
+  useEffect(() => {
+    if (isAuthenticated && user && !isLoadingFavorites) {
+      fetchUserProducts();
+    }
+  }, [isAuthenticated, user, isLoadingFavorites, favoriteProducts]);
 
   const handleProductClick = (product: Product) => {
     navigate(`/product/${product.id}`);
   };
 
-  const handleFavoriteToggle = (productId: string) => {
-    setUserProducts(prev => prev.map(product =>
-      product.id === productId
-        ? { ...product, isFavorited: !product.isFavorited }
-        : product
-    ));
+  const handleFavoriteToggle = async (productId: string) => {
+    try {
+      await apiService.toggleFavorite(Number(productId));
+      // Update both user products and favorites lists
+      setUserProducts(prev => prev.map(product =>
+        product.id === productId
+          ? { ...product, isFavorited: !product.isFavorited }
+          : product
+      ));
+      setFavoriteProducts(prev => prev.filter(product => product.id !== productId));
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // TODO: Show error toast
+    }
   };
 
   const handleContact = async (product: Product) => {
@@ -154,7 +201,7 @@ const Dashboard = () => {
 
   // Calculate statistics
   const totalViews = 0; // TODO: Implement when backend provides view counts
-  const totalFavorites = 0; // TODO: Implement when backend provides favorite counts
+  const totalFavorites = favoriteProducts.length;
 
   if (!isAuthenticated) {
     return null; // Will redirect in useEffect
@@ -205,28 +252,9 @@ const Dashboard = () => {
               <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
                 ¡Hola, {user?.name}!
               </h1>
-              <p className="text-lg mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+              <p className="text-lg" style={{ color: 'var(--color-text-secondary)' }}>
                 Bienvenido a tu panel de control
               </p>
-
-              {/* Quick Actions */}
-              <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                <button
-                  onClick={handleSellClick}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-hover)] transition-colors font-medium"
-                >
-                  <Plus className="w-4 h-4" />
-                  Publicar Producto
-                </button>
-                <button
-                  onClick={handleProfileClick}
-                  className="inline-flex items-center gap-2 px-4 py-2 border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-surface)] transition-colors font-medium"
-                  style={{ color: 'var(--color-text-primary)' }}
-                >
-                  <User className="w-4 h-4" />
-                  Ver Perfil Público
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -282,13 +310,23 @@ const Dashboard = () => {
             <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
               Mis Productos
             </h2>
-            <button
-              onClick={handleSellClick}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-hover)] transition-colors font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              Agregar Producto
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSellClick}
+                className="inline-flex items-center justify-center hover:bg-[var(--color-surface)] rounded transition-colors p-1"
+                aria-label="Agregar Producto"
+              >
+                <Plus className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+              </button>
+              <button
+                onClick={() => navigate('/my-products')}
+                className="inline-flex items-center gap-2 px-4 py-2 border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-surface)] transition-colors font-medium"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
+                <Package className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+                Ver todo
+              </button>
+            </div>
           </div>
 
           {userProducts.length === 0 ? (
@@ -363,6 +401,53 @@ const Dashboard = () => {
                   </button>
                 </div>
               )}
+            </>
+          )}
+        </div>
+
+        {/* Favorites Section */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+              Mis Favoritos
+            </h2>
+            <button
+              onClick={() => navigate('/favorites')}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-surface)] transition-colors font-medium"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              <Heart className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+              Ver todo
+            </button>
+          </div>
+
+          {favoriteProducts.length === 0 ? (
+            <div className="text-center py-12 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
+              <Heart className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--color-text-secondary)' }} />
+              <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                Aún no has agregado productos a favoritos
+              </h3>
+              <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+                Explora productos y guarda los que te interesen para verlos aquí.
+              </p>
+              <button
+                onClick={() => navigate('/')}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-hover)] transition-colors font-medium"
+              >
+                Explorar Productos
+              </button>
+            </div>
+          ) : (
+            <>
+              <ProductGrid
+                products={favoriteProducts.slice(0, 12)}
+                isLoading={isLoadingFavorites}
+                onProductClick={handleProductClick}
+                onFavoriteToggle={handleFavoriteToggle}
+                onContact={handleContact}
+                showContactButton={true}
+                isAuthenticated={isAuthenticated}
+              />
             </>
           )}
         </div>

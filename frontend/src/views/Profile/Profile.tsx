@@ -27,6 +27,11 @@ const Profile = () => {
   const [hasProductsForSale, setHasProductsForSale] = useState(false);
   const { theme, resolvedTheme, toggleTheme } = useTheme();
 
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const fetchUserProfile = async () => {
     if (!userId) return;
 
