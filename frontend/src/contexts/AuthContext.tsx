@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { apiService } from '../services/api';
 import type { AuthResponse } from '../services/api';
-import { generateRandomAvatar } from '../utils/apiTransformers';
+import { generateRandomAvatar, transformImageUrl } from '../utils/apiTransformers';
 
 interface User {
   id: string;
@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         name: userData.name,
         email: userData.email,
         role: userData.role,
-        avatar: generateRandomAvatar(userData.id),
+        avatar: userData.profilePictureUrl ? transformImageUrl(userData.profilePictureUrl) : generateRandomAvatar(userData.id),
         phoneVerified: false, // Default value
         createdAt: new Date(), // Default value
       };
@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         name: response.user.name,
         email: response.user.email,
         role: response.user.role,
-        avatar: generateRandomAvatar(response.user.id),
+        avatar: response.user.profilePictureUrl ? transformImageUrl(response.user.profilePictureUrl) : generateRandomAvatar(response.user.id),
         phoneVerified: false, // Default value
         createdAt: new Date(), // Default value
       };
@@ -110,7 +110,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         name: response.user.name,
         email: response.user.email,
         role: response.user.role,
-        avatar: generateRandomAvatar(response.user.id),
+        avatar: response.user.profilePictureUrl ? transformImageUrl(response.user.profilePictureUrl) : generateRandomAvatar(response.user.id),
         phoneVerified: false, // Default value
         createdAt: new Date(), // Default value
       };
@@ -129,11 +129,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
-  const updateUser = (userData: Partial<User>) => {
-    if (user) {
-      setUser({ ...user, ...userData });
-    }
-  };
+  const updateUser = useCallback((userData: Partial<User>) => {
+    setUser(prev => prev ? { ...prev, ...userData } : null);
+  }, []);
 
   const value: AuthContextType = {
     user,
