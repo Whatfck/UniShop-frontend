@@ -608,13 +608,13 @@ const ProductDetail = () => {
           </div>
 
             {/* Product Information */}
-            <div className="lg:flex-1 space-y-6">
+            <div className="lg:flex-1 space-y-4">
               {/* Title and Price */}
               <div>
-                <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
                   {product.title}
                 </h1>
-                <p className="text-3xl font-bold" style={{ color: 'var(--color-primary)' }}>
+                <p className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
                   ${product.price.toLocaleString()}
                 </p>
               </div>
@@ -640,58 +640,18 @@ const ProductDetail = () => {
 
               {/* Description */}
               <div>
-                <h2 className="text-xl font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
+                <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
                   Descripción
                 </h2>
-                <p style={{ color: 'var(--color-text-secondary)' }} className="leading-relaxed">
+                <p style={{ color: 'var(--color-text-secondary)' }} className="leading-relaxed text-sm">
                   {product.description}
                 </p>
               </div>
 
-              {/* Related Products Carousel */}
-              {relatedProducts.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="font-semibold mb-4 text-lg" style={{ color: 'var(--color-text-primary)' }}>
-                    Productos Relacionados
-                  </h3>
-                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                    {relatedProducts.map((relatedProduct) => (
-                      <div
-                        key={relatedProduct.id}
-                        onClick={() => navigate(`/product/${relatedProduct.id}`)}
-                        className="flex-shrink-0 w-40 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                      >
-                        <div className="aspect-square bg-[var(--color-border)] overflow-hidden">
-                          {relatedProduct.images && relatedProduct.images.length > 0 ? (
-                            <img
-                              src={relatedProduct.images[0]}
-                              alt={relatedProduct.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <span className="text-gray-400 text-xs">Sin imagen</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-3">
-                          <h4 className="font-medium text-sm mb-1 line-clamp-2" style={{ color: 'var(--color-text-primary)' }}>
-                            {relatedProduct.title}
-                          </h4>
-                          <p className="text-sm font-bold" style={{ color: 'var(--color-primary)' }}>
-                            ${relatedProduct.price.toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Tags */}
               {product.tags && product.tags.length > 0 && (
                 <div>
-                  <h3 className="font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
+                  <h3 className="font-semibold mb-2 text-sm" style={{ color: 'var(--color-text-primary)' }}>
                     Etiquetas
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -741,6 +701,46 @@ const ProductDetail = () => {
                     </span>
                   </div>
                 </div>
+      
+                {/* Related Products Carousel - at the bottom */}
+                {relatedProducts.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-4 text-lg" style={{ color: 'var(--color-text-primary)' }}>
+                      Productos Relacionados
+                    </h3>
+                    <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                      {relatedProducts.map((relatedProduct) => (
+                        <div
+                          key={relatedProduct.id}
+                          onClick={() => navigate(`/product/${relatedProduct.id}`)}
+                          className="flex-shrink-0 w-40 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                        >
+                          <div className="aspect-square bg-[var(--color-border)] overflow-hidden">
+                            {relatedProduct.images && relatedProduct.images.length > 0 ? (
+                              <img
+                                src={relatedProduct.images[0]}
+                                alt={relatedProduct.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="text-gray-400 text-xs">Sin imagen</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3">
+                            <h4 className="font-medium text-sm mb-1 line-clamp-2" style={{ color: 'var(--color-text-primary)' }}>
+                              {relatedProduct.title}
+                            </h4>
+                            <p className="text-sm font-bold" style={{ color: 'var(--color-primary)' }}>
+                              ${relatedProduct.price.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <Button
                 variant="outline"
