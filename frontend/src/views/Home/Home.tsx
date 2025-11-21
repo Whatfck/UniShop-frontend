@@ -33,7 +33,7 @@ const Home = () => {
   const [hasProductsForSale, setHasProductsForSale] = useState(false);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'price-low' | 'price-high'>('newest');
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const { theme, resolvedTheme, toggleTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
 
   const fetchProducts = async () => {
     try {
@@ -363,8 +363,6 @@ const Home = () => {
         isAuthenticated={isAuthenticated}
         user={user || undefined}
         hasProductsForSale={hasProductsForSale}
-        theme={theme}
-        resolvedTheme={resolvedTheme}
         onLoginClick={handleLogin}
         onRegisterClick={handleRegister}
         onSellClick={handleSellClick}

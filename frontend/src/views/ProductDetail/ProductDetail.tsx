@@ -14,7 +14,7 @@ import type { Product } from '../../types';
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { theme, resolvedTheme, toggleTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -411,9 +411,6 @@ const ProductDetail = () => {
         <Header
           searchQuery=""
           onSearchChange={() => {}}
-          theme={theme}
-          resolvedTheme={resolvedTheme}
-          onThemeToggle={toggleTheme}
           hasProductsForSale={false}
         />
         <main className="max-w-full mx-auto py-16 px-4">
@@ -434,9 +431,6 @@ const ProductDetail = () => {
         <Header
           searchQuery=""
           onSearchChange={() => {}}
-          theme={theme}
-          resolvedTheme={resolvedTheme}
-          onThemeToggle={toggleTheme}
         />
         <main className="max-w-full mx-auto py-16 px-4">
           <div className="text-center">
@@ -459,9 +453,6 @@ const ProductDetail = () => {
         <Header
           searchQuery=""
           onSearchChange={() => {}}
-          theme={theme}
-          resolvedTheme={resolvedTheme}
-          onThemeToggle={toggleTheme}
           onLoginClick={handleLogin}
           onRegisterClick={handleRegister}
           hasProductsForSale={false}
@@ -504,9 +495,6 @@ const ProductDetail = () => {
         isAuthenticated={isAuthenticated}
         user={user || undefined}
         hasProductsForSale={false}
-        theme={theme}
-        resolvedTheme={resolvedTheme}
-        onThemeToggle={toggleTheme}
         onLoginClick={handleLogin}
         onRegisterClick={handleRegister}
         onSellClick={handleSellClick}

@@ -18,7 +18,7 @@ const MyProducts = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 12;
   const { user, isAuthenticated } = useAuth();
-  const { theme, resolvedTheme, toggleTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -108,9 +108,6 @@ const MyProducts = () => {
         isAuthenticated={isAuthenticated}
         user={user || undefined}
         hasProductsForSale={userProducts.length > 0}
-        theme={theme}
-        resolvedTheme={resolvedTheme}
-        onThemeToggle={toggleTheme}
         onLoginClick={() => {}}
         onRegisterClick={() => {}}
         onSellClick={handleSellClick}

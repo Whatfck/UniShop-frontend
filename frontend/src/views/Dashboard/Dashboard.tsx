@@ -29,7 +29,7 @@ const Dashboard = () => {
   const [showCreateProductModal, setShowCreateProductModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [hasProductsForSale, setHasProductsForSale] = useState(false);
-  const { theme, resolvedTheme, toggleTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -247,8 +247,6 @@ const Dashboard = () => {
         isAuthenticated={isAuthenticated}
         user={user || undefined}
         hasProductsForSale={hasProductsForSale}
-        theme={theme}
-        resolvedTheme={resolvedTheme}
         onLoginClick={handleLogin}
         onRegisterClick={handleRegister}
         onSellClick={handleSellClick}
@@ -586,33 +584,6 @@ const Dashboard = () => {
                     </p>
                   </div>
 
-                  {/* Theme Toggle Section */}
-                  <div className="border-t pt-4">
-                    <label className="block text-sm font-medium mb-3" style={{ color: 'var(--color-text-primary)' }}>
-                      Preferencias de Tema
-                    </label>
-                    <div className="space-y-3">
-                      <button
-                        type="button"
-                        onClick={toggleTheme}
-                        className="w-full flex items-center justify-between p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          {resolvedTheme === 'light' ? (
-                            <Moon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
-                          ) : (
-                            <Sun className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
-                          )}
-                          <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                            {resolvedTheme === 'light' ? 'Tema Oscuro' : 'Tema Claro'}
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Cambiar a {resolvedTheme === 'light' ? 'oscuro' : 'claro'}
-                        </div>
-                      </button>
-                    </div>
-                  </div>
                 </div>
 
                 <div className="flex gap-3 mt-6">
