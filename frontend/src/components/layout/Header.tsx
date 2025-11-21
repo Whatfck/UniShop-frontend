@@ -17,6 +17,7 @@ interface HeaderProps {
   hasProductsForSale?: boolean;
   theme: Theme;
   resolvedTheme: 'light' | 'dark';
+  onThemeToggle?: () => void;
   onLoginClick?: () => void;
   onRegisterClick?: () => void;
   onSellClick?: () => void;
@@ -33,6 +34,7 @@ const Header = ({
   hasProductsForSale = false,
   theme,
   resolvedTheme,
+  onThemeToggle,
   onLoginClick,
   onRegisterClick,
   onSellClick,
