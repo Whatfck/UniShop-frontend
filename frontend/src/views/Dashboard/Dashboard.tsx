@@ -36,6 +36,16 @@ const Dashboard = () => {
     window.scrollTo(0, 0);
   }, []);
 
+  // Check for sell query parameter and open create product modal
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('sell') === 'true') {
+      setShowCreateProductModal(true);
+      // Clean up the URL
+      window.history.replaceState({}, '', '/dashboard');
+    }
+  }, []);
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
