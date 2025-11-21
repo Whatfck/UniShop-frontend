@@ -5,5 +5,11 @@
   "framework": "vite",
   "env": {
     "VITE_API_URL": "https://unishop.tailbb818c.ts.net"
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
