@@ -504,9 +504,11 @@ const ProductDetail = () => {
 
 
       <main className="max-w-full mx-auto py-8" style={{ paddingLeft: 'var(--container-padding)', paddingRight: 'var(--container-padding)' }}>
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Product Images */}
-          <div className="lg:w-1/2 lg:mx-auto lg:self-center">
+        <div className="space-y-8">
+          {/* Top section: Image and Product Details */}
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Product Images */}
+            <div className="lg:flex-1 lg:mx-auto lg:self-center">
             {/* Advanced Image Viewer */}
             <div
               className={`relative aspect-square lg:max-h-[87vh] rounded-xl overflow-hidden bg-[var(--color-border)] select-none ${
@@ -593,47 +595,71 @@ const ProductDetail = () => {
 
           </div>
 
-          {/* Product Information */}
+            {/* Product Information */}
+            <div className="lg:flex-1 space-y-4">
+              {/* Title and Price */}
+              <div>
+                <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                  {product.title}
+                </h1>
+                <p className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
+                  ${product.price.toLocaleString()}
+                </p>
+              </div>
+
+              {/* Condition and Location */}
+              <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  product.condition === 'new'
+                    ? 'bg-[var(--color-secondary)] text-white'
+                    : 'bg-[var(--color-surface)] text-[var(--color-text-primary)]'
+                }`}>
+                  {product.condition === 'new' ? 'Nuevo' : 'Usado'}
+                </span>
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  <span>{product.location}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  <span>Hace {Math.floor((Date.now() - new Date(product.createdAt).getTime()) / (1000 * 60 * 60 * 24))} días</span>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                  Descripción
+                </h2>
+                <p style={{ color: 'var(--color-text-secondary)' }} className="leading-relaxed text-sm">
+                  {product.description}
+                </p>
+              </div>
+
+              {/* Tags */}
+              {product.tags && product.tags.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-2 text-sm" style={{ color: 'var(--color-text-primary)' }}>
+                    Etiquetas
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {product.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1 bg-[var(--color-border)] rounded-full text-sm"
+                        style={{ color: 'var(--color-text-primary)' }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Bottom section: Seller Information and Action Buttons */}
           <div className="space-y-6">
-            {/* Title and Price */}
-            <div>
-              <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-                {product.title}
-              </h1>
-              <p className="text-3xl font-bold" style={{ color: 'var(--color-primary)' }}>
-                ${product.price.toLocaleString()}
-              </p>
-            </div>
-
-            {/* Condition and Location */}
-            <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                product.condition === 'new'
-                  ? 'bg-[var(--color-secondary)] text-white'
-                  : 'bg-[var(--color-surface)] text-[var(--color-text-primary)]'
-              }`}>
-                {product.condition === 'new' ? 'Nuevo' : 'Usado'}
-              </span>
-              <div className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" />
-                <span>{product.location}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                <span>Hace {Math.floor((Date.now() - new Date(product.createdAt).getTime()) / (1000 * 60 * 60 * 24))} días</span>
-              </div>
-            </div>
-
-            {/* Description */}
-            <div>
-              <h2 className="text-xl font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
-                Descripción
-              </h2>
-              <p style={{ color: 'var(--color-text-secondary)' }} className="leading-relaxed">
-                {product.description}
-              </p>
-            </div>
-
             {/* Seller Information */}
             <div className="border border-[var(--color-border)] rounded-lg p-4">
               <h3 className="font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
@@ -663,6 +689,46 @@ const ProductDetail = () => {
                     </span>
                   </div>
                 </div>
+      
+                {/* Related Products Carousel - at the bottom */}
+                {relatedProducts.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-4 text-lg" style={{ color: 'var(--color-text-primary)' }}>
+                      Productos Relacionados
+                    </h3>
+                    <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                      {relatedProducts.map((relatedProduct) => (
+                        <div
+                          key={relatedProduct.id}
+                          onClick={() => navigate(`/product/${relatedProduct.id}`)}
+                          className="flex-shrink-0 w-40 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                        >
+                          <div className="aspect-square bg-[var(--color-border)] overflow-hidden">
+                            {relatedProduct.images && relatedProduct.images.length > 0 ? (
+                              <img
+                                src={relatedProduct.images[0]}
+                                alt={relatedProduct.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="text-gray-400 text-xs">Sin imagen</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3">
+                            <h4 className="font-medium text-sm mb-1 line-clamp-2" style={{ color: 'var(--color-text-primary)' }}>
+                              {relatedProduct.title}
+                            </h4>
+                            <p className="text-sm font-bold" style={{ color: 'var(--color-primary)' }}>
+                              ${relatedProduct.price.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <Button
                 variant="outline"
@@ -704,66 +770,6 @@ const ProductDetail = () => {
                 </Button>
               </div>
             </div>
-
-            {/* Related Products Carousel */}
-            {relatedProducts.length > 0 && (
-              <div className="mt-6">
-                <h3 className="font-semibold mb-4 text-lg" style={{ color: 'var(--color-text-primary)' }}>
-                  Productos Relacionados
-                </h3>
-                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                  {relatedProducts.map((relatedProduct) => (
-                    <div
-                      key={relatedProduct.id}
-                      onClick={() => navigate(`/product/${relatedProduct.id}`)}
-                      className="flex-shrink-0 w-40 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                    >
-                      <div className="aspect-square bg-[var(--color-border)] overflow-hidden">
-                        {relatedProduct.images && relatedProduct.images.length > 0 ? (
-                          <img
-                            src={relatedProduct.images[0]}
-                            alt={relatedProduct.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <span className="text-gray-400 text-xs">Sin imagen</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-3">
-                        <h4 className="font-medium text-sm mb-1 line-clamp-2" style={{ color: 'var(--color-text-primary)' }}>
-                          {relatedProduct.title}
-                        </h4>
-                        <p className="text-sm font-bold" style={{ color: 'var(--color-primary)' }}>
-                          ${relatedProduct.price.toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Tags */}
-            {product.tags && product.tags.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
-                  Etiquetas
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {product.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1 bg-[var(--color-border)] rounded-full text-sm"
-                      style={{ color: 'var(--color-text-primary)' }}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
