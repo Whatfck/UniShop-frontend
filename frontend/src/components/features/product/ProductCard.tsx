@@ -84,7 +84,10 @@ const ProductCard = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onFavoriteToggle?.()}
+              onClick={(e) => {
+                e?.stopPropagation();
+                onFavoriteToggle?.();
+              }}
               className="bg-white/90 backdrop-blur-sm hover:bg-white"
               aria-label={isFavorited ? "Quitar de favoritos" : "Agregar a favoritos"}
             >
