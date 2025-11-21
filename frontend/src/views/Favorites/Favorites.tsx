@@ -38,7 +38,7 @@ const Favorites = () => {
     try {
       setIsLoading(true);
       // First get favorite product IDs
-      const favoriteIds = await apiService.getFavorites() as unknown as number[];
+      const favoriteIds = await apiService.getFavoriteIds();
       console.log('Favorite IDs received:', favoriteIds);
 
       if (favoriteIds.length === 0) {
@@ -86,9 +86,11 @@ const Favorites = () => {
     if (!isAuthenticated) return;
 
     try {
-      await apiService.toggleFavorite(Number(productId));
-      // Remove from favorites list
-      setFavoriteProducts(prev => prev.filter(product => product.id !== productId));
+      const response = await apiService.toggleFavorite(Number(productId));
+      // If no longer favorited, remove from favorites list
+      if (!response.isFavorited) {
+        setFavoriteProducts(prev => prev.filter(product => product.id !== productId));
+      }
     } catch (error) {
       console.error('Error toggling favorite:', error);
     }

@@ -4,8 +4,24 @@ import type { ApiProduct, Product, Seller } from '../types';
  * Transforma un producto de la API al formato del frontend
  */
 export function transformApiProduct(apiProduct: ApiProduct): Product {
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  console.log('Base URL for images:', baseUrl);
+
+  // Transform image URLs to full URLs
+  const transformedImages = apiProduct.images.map(img => {
+    if (img.imageUrl.startsWith('/uploads/')) {
+      // Convert relative URL to full URL
+      const fullUrl = `${baseUrl}${img.imageUrl}`;
+      console.log('Converting relative URL:', img.imageUrl, 'to full URL:', fullUrl);
+      return fullUrl;
+    }
+    // Keep external URLs as-is (like Picsum URLs)
+    console.log('Keeping external URL:', img.imageUrl);
+    return img.imageUrl;
+  });
+
   // Debug: log image transformation
-  console.log('Transforming images:', apiProduct.images, 'to URLs:', apiProduct.images.map(img => img.imageUrl));
+  console.log('Final transformed images for product', apiProduct.id, ':', transformedImages);
 
   return {
     id: apiProduct.id.toString(),
@@ -13,7 +29,7 @@ export function transformApiProduct(apiProduct: ApiProduct): Product {
     description: apiProduct.description,
     price: Number(apiProduct.price),
     condition: apiProduct.condition === 'Nuevo' ? 'new' : 'used',
-    images: apiProduct.images.map(img => img.imageUrl),
+    images: transformedImages,
     category: apiProduct.category?.name || 'Sin categoría',
     seller: transformApiUserToSeller(apiProduct),
     location: 'Campus UCC', // Por defecto, ya que no viene del backend
@@ -75,6 +91,18 @@ export function transformFiltersToApi(filters: {
   // ya que el backend no tiene estos filtros específicos
 
   return apiFilters;
+}
+
+/**
+ * Transforma URLs de imágenes convirtiendo URLs relativas en URLs completas
+ */
+export function transformImageUrl(imageUrl: string): string {
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  if (imageUrl.startsWith('/uploads/')) {
+    return `${baseUrl}${imageUrl}`;
+  }
+  // Keep external URLs as-is (like DiceBear URLs)
+  return imageUrl;
 }
 
 /**

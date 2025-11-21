@@ -4,12 +4,13 @@ import { Header, Footer } from '../../components/layout';
 import { ProductGrid } from '../../components/features/product';
 import LoginModal from '../../components/auth/LoginModal';
 import RegisterModal from '../../components/auth/RegisterModal';
+import CreateProductModal from '../../components/CreateProductModal';
 import { useTheme } from '../../hooks';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Product } from '../../types';
 import { apiService } from '../../services/api';
 import { transformApiProduct } from '../../utils/apiTransformers';
-import { User, Package, Eye, Heart, TrendingUp, Plus } from 'lucide-react';
+import { User, Package, Eye, Heart, TrendingUp, Plus, Edit } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -25,6 +26,8 @@ const Dashboard = () => {
   const { user, isAuthenticated, login, register, logout } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showCreateProductModal, setShowCreateProductModal] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [hasProductsForSale, setHasProductsForSale] = useState(false);
   const { theme, resolvedTheme, toggleTheme } = useTheme();
 
@@ -73,7 +76,7 @@ const Dashboard = () => {
     try {
       setIsLoadingFavorites(true);
       // First get favorite product IDs
-      const favoriteIds = await apiService.getFavorites() as unknown as number[];
+      const favoriteIds = await apiService.getFavoriteIds();
       console.log('Dashboard - Favorite IDs received:', favoriteIds);
 
       if (favoriteIds.length === 0) {
@@ -162,8 +165,12 @@ const Dashboard = () => {
   };
 
   const handleSellClick = () => {
-    // TODO: Navigate to sell product page
-    console.log('Navigate to sell product page');
+    setShowCreateProductModal(true);
+  };
+
+  const handleProductCreated = () => {
+    // Refresh user products after creating a new one
+    fetchUserProducts();
   };
 
   const handleProfileClick = () => {
@@ -263,9 +270,19 @@ const Dashboard = () => {
 
             {/* User Info */}
             <div className="flex-1 text-center md:text-left self-center">
-              <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-                ¡Hola, {user?.name}!
-              </h1>
+              <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                  ¡Hola, {user?.name}!
+                </h1>
+                <button
+                  onClick={() => setShowEditProfileModal(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary)]/90 transition-colors text-sm font-medium"
+                  title="Editar perfil"
+                >
+                  <Edit className="w-4 h-4" />
+                  Editar perfil
+                </button>
+              </div>
               <p className="text-lg" style={{ color: 'var(--color-text-secondary)' }}>
                 Bienvenido a tu panel de control
               </p>
@@ -481,6 +498,106 @@ const Dashboard = () => {
         onClose={() => setShowRegisterModal(false)}
         onSwitchToLogin={handleSwitchToLogin}
       />
+
+      {/* Create Product Modal */}
+      <CreateProductModal
+        isOpen={showCreateProductModal}
+        onClose={() => setShowCreateProductModal(false)}
+        onProductCreated={handleProductCreated}
+      />
+
+      {/* Edit Profile Modal */}
+      {showEditProfileModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+                Editar Perfil
+              </h2>
+
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target as HTMLFormElement);
+                const name = formData.get('name') as string;
+                const profileImageFile = formData.get('profileImage') as File;
+
+                try {
+                  let profileImageUrl = user?.avatar;
+
+                  // Upload new profile image if provided
+                  if (profileImageFile && profileImageFile.size > 0) {
+                    const uploadResult = await apiService.uploadProfileImage(profileImageFile);
+                    profileImageUrl = uploadResult.url;
+                  }
+
+                  // Update profile
+                  if (user?.id) {
+                    await apiService.updateUserProfile(user.id, {
+                      name: name || user.name,
+                      profileImage: profileImageUrl
+                    });
+
+                    // Update local user state (you might need to update the auth context)
+                    // For now, just close the modal
+                    setShowEditProfileModal(false);
+                    // You might want to refresh the page or update the user context
+                    window.location.reload();
+                  }
+                } catch (error) {
+                  console.error('Error updating profile:', error);
+                  // TODO: Show error message
+                }
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                      Nombre
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      defaultValue={user?.name}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                      Foto de Perfil
+                    </label>
+                    <input
+                      type="file"
+                      name="profileImage"
+                      accept="image/*"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditProfileModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Guardar Cambios
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

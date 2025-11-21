@@ -56,7 +56,7 @@ const ProductDetail = () => {
         let isProductFavorited = transformedProduct.isFavorited || false;
         if (isAuthenticated && user) {
           try {
-            const favoriteIds = await apiService.getFavorites() as unknown as number[];
+            const favoriteIds = await apiService.getFavoriteIds();
             isProductFavorited = favoriteIds.includes(Number(id));
           } catch (favError) {
             console.error('Error checking if product is favorited:', favError);
@@ -94,8 +94,8 @@ const ProductDetail = () => {
     if (!product) return;
 
     try {
-      await apiService.toggleFavorite(Number(product.id));
-      setIsFavorited(!isFavorited);
+      const response = await apiService.toggleFavorite(Number(product.id));
+      setIsFavorited(response.isFavorited);
     } catch (error) {
       console.error('Error toggling favorite:', error);
       // TODO: Show error toast
@@ -443,7 +443,7 @@ const ProductDetail = () => {
             <h1 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>
               {error || 'Producto no encontrado'}
             </h1>
-            <Button onClick={() => navigate('/')} style={{ color: 'var(--color-text-primary)' }}>
+            <Button onClick={() => navigate('/')} className="text-[var(--color-text-primary)]">
               Volver al inicio
             </Button>
           </div>
@@ -566,7 +566,10 @@ const ProductDetail = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleFavoriteToggle}
+                onClick={(e) => {
+                  e?.stopPropagation();
+                  handleFavoriteToggle();
+                }}
                 className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white z-20"
                 aria-label={isFavorited ? "Quitar de favoritos" : "Agregar a favoritos"}
               >

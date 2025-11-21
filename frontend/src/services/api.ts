@@ -149,7 +149,7 @@ class ApiService {
   }
 
   // Favorites
-  async getFavorites(): Promise<ApiProduct[]> {
+  async getFavoriteIds(): Promise<number[]> {
     return this.request('/api/v1/favorites', {
       headers: {
         'Authorization': `Bearer ${this.getToken()}`,
@@ -178,7 +178,7 @@ class ApiService {
     });
   }
 
-  async toggleFavorite(productId: number): Promise<{ message: string }> {
+  async toggleFavorite(productId: number): Promise<{ isFavorited: boolean; message: string }> {
     return this.request(`/api/v1/favorites/${productId}/toggle`, {
       method: 'POST',
       headers: {
@@ -197,6 +197,18 @@ class ApiService {
     });
   }
 
+  // User profile
+  async getUserProfile(userId: string): Promise<{
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+    phoneVerified: boolean;
+    createdAt: string;
+  }> {
+    return this.request(`/api/v1/users/${userId}/profile`);
+  }
+
   // Token management
   setToken(token: string): void {
     localStorage.setItem('auth_token', token);
@@ -208,6 +220,83 @@ class ApiService {
 
   removeToken(): void {
     localStorage.removeItem('auth_token');
+  }
+
+  // Products management
+  async createProduct(productData: {
+    name: string;
+    description: string;
+    price: number;
+    categoryId: number;
+    condition: string;
+    imageUrls: string[];
+    imageOrder?: number[];
+  }): Promise<ApiProduct> {
+    return this.request<ApiProduct>('/api/v1/products', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(productData),
+    });
+  }
+
+  // Image upload
+  async uploadProductImages(files: File[]): Promise<{ url: string; filename: string }[]> {
+    const formData = new FormData();
+    files.forEach((file, index) => {
+      formData.append('files', file);
+    });
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/images/products/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Upload Error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data.map((item: any) => ({
+      url: item.url,
+      filename: item.filename
+    }));
+  }
+
+  async uploadProfileImage(file: File): Promise<{ url: string; filename: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/images/profiles/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Upload Error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    return {
+      url: data.url,
+      filename: data.filename
+    };
+  }
+
+  // User profile
+  async updateUserProfile(userId: string, profileData: { name?: string; profileImage?: string }): Promise<any> {
+    return this.request(`/api/v1/users/${userId}/profile`, {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
   }
 
   isAuthenticated(): boolean {

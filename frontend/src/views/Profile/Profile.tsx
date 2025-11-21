@@ -8,8 +8,8 @@ import { useTheme } from '../../hooks';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Product, User as UserType } from '../../types';
 import { apiService } from '../../services/api';
-import { transformApiProduct, generateRandomAvatar } from '../../utils/apiTransformers';
-import { Calendar, Package } from 'lucide-react';
+import { transformApiProduct, generateRandomAvatar, transformImageUrl } from '../../utils/apiTransformers';
+import { Calendar, Package, Edit } from 'lucide-react';
 
 const Profile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -39,39 +39,24 @@ const Profile = () => {
       setIsLoading(true);
       setError(null);
 
-      // For now, we'll get user info from products since we don't have a dedicated user endpoint
-      // TODO: Implement proper user profile endpoint
+      // Get user profile data
+      const userProfileData = await apiService.getUserProfile(userId);
+
+      // Get user's products
       const allProducts = await apiService.getProducts();
       const userProductsData = allProducts.filter(product => String(product.userId) === userId);
+      const transformedProducts = userProductsData.map(transformApiProduct);
 
-      let profileUserData: UserType;
-      let transformedProducts: Product[] = [];
-
-      if (userProductsData.length > 0) {
-        // Create user profile from first product data
-        const firstProduct = userProductsData[0];
-        profileUserData = {
-          id: firstProduct.userId,
-          name: firstProduct.userName,
-          email: '', // Not available from product data
-          avatar: generateRandomAvatar(firstProduct.userId), // Generate avatar for users with products
-          role: 'USER',
-          phoneVerified: false, // Not available from product data
-          createdAt: new Date(), // Not available from product data
-        };
-        transformedProducts = userProductsData.map(transformApiProduct);
-      } else {
-        // Create a basic user profile for users without products
-        profileUserData = {
-          id: userId,
-          name: `Usuario ${userId}`, // Placeholder name
-          email: '',
-          avatar: generateRandomAvatar(userId), // Generate avatar for users without products
-          role: 'USER',
-          phoneVerified: false,
-          createdAt: new Date(),
-        };
-      }
+      // Create user profile with real data
+      const profileUserData: UserType = {
+        id: userProfileData.id,
+        name: userProfileData.name,
+        email: userProfileData.email,
+        avatar: userProfileData.avatar ? transformImageUrl(userProfileData.avatar) : generateRandomAvatar(userProfileData.id), // Use real avatar or generate random
+        role: 'USER',
+        phoneVerified: userProfileData.phoneVerified,
+        createdAt: new Date(userProfileData.createdAt),
+      };
 
       setProfileUser(profileUserData);
       setUserProducts(transformedProducts);
@@ -309,9 +294,21 @@ const Profile = () => {
 
             {/* Profile Info */}
             <div className="flex-1 text-center md:text-left self-center">
-              <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-                {profileUser.name}
-              </h1>
+              <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                  {profileUser.name}
+                </h1>
+                {isAuthenticated && user?.id === profileUser.id && (
+                  <button
+                    onClick={handleDashboardClick}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary)]/90 transition-colors text-sm font-medium"
+                    title="Editar perfil"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Editar perfil
+                  </button>
+                )}
+              </div>
 
               <div className="flex flex-wrap justify-center md:justify-start gap-4">
                 <div className="flex items-center gap-1 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
