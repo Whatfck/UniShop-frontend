@@ -37,11 +37,25 @@ const Favorites = () => {
 
     try {
       setIsLoading(true);
-      const apiFavorites = await apiService.getFavorites();
-      const transformedFavorites = apiFavorites.map(product => ({
+      // First get favorite product IDs
+      const favoriteIds = await apiService.getFavorites() as unknown as number[];
+      console.log('Favorite IDs received:', favoriteIds);
+
+      if (favoriteIds.length === 0) {
+        setFavoriteProducts([]);
+        return;
+      }
+
+      // Then get full product details for each favorite
+      const productPromises = favoriteIds.map(id => apiService.getProduct(id));
+      const apiProducts = await Promise.all(productPromises);
+      console.log('Favorite products received:', apiProducts);
+
+      const transformedFavorites = apiProducts.map(product => ({
         ...transformApiProduct(product),
         isFavorited: true
       }));
+
       setFavoriteProducts(transformedFavorites);
     } catch (err) {
       console.error('Error fetching favorite products:', err);

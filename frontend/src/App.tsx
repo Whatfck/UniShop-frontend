@@ -7,6 +7,8 @@ import { Profile } from './views/Profile';
 import Dashboard from './views/Dashboard';
 import Favorites from './views/Favorites';
 import MyProducts from './views/MyProducts';
+import Chatbot from './components/chatbot';
+import BackToTop from './components/BackToTop';
 import './App.css'
 
 function App() {
@@ -22,6 +24,10 @@ function App() {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/profile/:userId" element={<Profile />} />
         </Routes>
+
+        {/* Botones flotantes disponibles en todas las páginas */}
+        <BackToTop />
+        <Chatbot apiUrl="http://localhost:8000" />
       </Router>
     </AuthProvider>
   )

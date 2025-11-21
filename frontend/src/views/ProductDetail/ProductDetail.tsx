@@ -51,8 +51,20 @@ const ProductDetail = () => {
 
         const apiProduct = await apiService.getProduct(Number(id));
         const transformedProduct = transformApiProduct(apiProduct);
+
+        // Check if product is favorited by current user
+        let isProductFavorited = transformedProduct.isFavorited || false;
+        if (isAuthenticated && user) {
+          try {
+            const favoriteIds = await apiService.getFavorites() as unknown as number[];
+            isProductFavorited = favoriteIds.includes(Number(id));
+          } catch (favError) {
+            console.error('Error checking if product is favorited:', favError);
+          }
+        }
+
         setProduct(transformedProduct);
-        setIsFavorited(transformedProduct.isFavorited || false);
+        setIsFavorited(isProductFavorited);
 
         // Preload all images
         transformedProduct.images.forEach(image => {
@@ -71,7 +83,7 @@ const ProductDetail = () => {
     };
 
     fetchProduct();
-  }, [id]);
+  }, [id, isAuthenticated, user]);
 
   // Reset zoom when changing images
   useEffect(() => {
@@ -431,7 +443,7 @@ const ProductDetail = () => {
             <h1 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>
               {error || 'Producto no encontrado'}
             </h1>
-            <Button onClick={() => navigate('/')}>
+            <Button onClick={() => navigate('/')} style={{ color: 'var(--color-text-primary)' }}>
               Volver al inicio
             </Button>
           </div>

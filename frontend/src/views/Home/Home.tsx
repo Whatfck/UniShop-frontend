@@ -46,11 +46,11 @@ const Home = () => {
       // If user is authenticated, check which products are favorited
       if (isAuthenticated && user) {
         try {
-          const favorites = await apiService.getFavorites();
-          const favoriteIds = new Set(favorites.map(fav => Number(fav.id)));
+          const favoriteIds = await apiService.getFavorites() as unknown as number[];
+          const favoriteIdSet = new Set(favoriteIds.map(id => String(id)));
           transformedProducts = transformedProducts.map(product => ({
             ...product,
-            isFavorited: favoriteIds.has(Number(product.id))
+            isFavorited: favoriteIdSet.has(String(product.id))
           }));
         } catch (favError) {
           console.error('Error fetching favorites:', favError);
@@ -127,14 +127,25 @@ const Home = () => {
   };
 
   const handleFavoriteToggle = async (productId: string) => {
+    console.log('Toggling favorite for product:', productId);
     try {
-      await apiService.toggleFavorite(Number(productId));
-      // Update local state
-      setProducts(prev => prev.map(product =>
-        product.id === productId
-          ? { ...product, isFavorited: !product.isFavorited }
-          : product
-      ));
+      const response = await apiService.toggleFavorite(Number(productId));
+      console.log('Toggle favorite response:', response);
+
+      // Update local state - ensure we're creating a new array and new objects
+      setProducts(prevProducts => {
+        return prevProducts.map(product => {
+          if (String(product.id) === String(productId)) {
+            const newIsFavorited = !product.isFavorited;
+            console.log(`Product ${productId} favorite status changed from ${product.isFavorited} to ${newIsFavorited}`);
+            return {
+              ...product,
+              isFavorited: newIsFavorited
+            };
+          }
+          return product;
+        });
+      });
     } catch (error) {
       console.error('Error toggling favorite:', error);
       // TODO: Show error toast
@@ -189,6 +200,10 @@ const Home = () => {
 
   const handleDashboardClick = () => {
     navigate('/dashboard');
+  };
+
+  const handleFavoritesClick = () => {
+    navigate('/favorites');
   };
 
   const handleLogoutClick = () => {
@@ -360,6 +375,7 @@ const Home = () => {
         onRegisterClick={handleRegister}
         onSellClick={handleSellClick}
         onDashboardClick={handleDashboardClick}
+        onFavoritesClick={handleFavoritesClick}
         onLogoutClick={handleLogoutClick}
       />
 

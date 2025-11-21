@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, Heart } from 'lucide-react';
 import { Button } from '../ui';
 import type { Theme } from '../../types';
 
@@ -22,6 +22,7 @@ interface HeaderProps {
   onRegisterClick?: () => void;
   onSellClick?: () => void;
   onDashboardClick?: () => void;
+  onFavoritesClick?: () => void;
   onLogoutClick?: () => void;
 }
 
@@ -39,6 +40,7 @@ const Header = ({
   onRegisterClick,
   onSellClick,
   onDashboardClick,
+  onFavoritesClick,
   onLogoutClick
 }: HeaderProps) => {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -160,6 +162,17 @@ const Header = ({
                         style={{ color: 'var(--color-primary)' }}
                       >
                         Vender
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          onFavoritesClick?.();
+                        }}
+                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-hover)] transition-colors"
+                        style={{ color: 'var(--color-text-primary)' }}
+                      >
+                        <Heart className="h-4 w-4" />
+                        Mis Favoritos
                       </button>
                       <button
                         onClick={() => {

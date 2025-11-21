@@ -43,7 +43,22 @@ const Search = () => {
       });
 
       const apiProducts = await apiService.getProducts(apiFilters);
-      const transformedProducts = apiProducts.map(transformApiProduct);
+      let transformedProducts = apiProducts.map(transformApiProduct);
+
+      // If user is authenticated, check which products are favorited
+      if (isAuthenticated && user) {
+        try {
+          const favoriteIds = await apiService.getFavorites() as unknown as number[];
+          const favoriteIdSet = new Set(favoriteIds.map(id => String(id)));
+          transformedProducts = transformedProducts.map(product => ({
+            ...product,
+            isFavorited: favoriteIdSet.has(String(product.id))
+          }));
+        } catch (favError) {
+          console.error('Error fetching favorites:', favError);
+          // Continue without favorites if there's an error
+        }
+      }
 
       setProducts(transformedProducts);
     } catch (err) {
@@ -131,12 +146,30 @@ const Search = () => {
     }
   };
 
-  const handleFavoriteToggle = (productId: string) => {
-    setProducts(prev => prev.map(product =>
-      product.id === productId
-        ? { ...product, isFavorited: !product.isFavorited }
-        : product
-    ));
+  const handleFavoriteToggle = async (productId: string) => {
+    console.log('Toggling favorite for product:', productId);
+    try {
+      const response = await apiService.toggleFavorite(Number(productId));
+      console.log('Toggle favorite response:', response);
+
+      // Update local state - ensure we're creating a new array and new objects
+      setProducts(prevProducts => {
+        return prevProducts.map(product => {
+          if (String(product.id) === String(productId)) {
+            const newIsFavorited = !product.isFavorited;
+            console.log(`Product ${productId} favorite status changed from ${product.isFavorited} to ${newIsFavorited}`);
+            return {
+              ...product,
+              isFavorited: newIsFavorited
+            };
+          }
+          return product;
+        });
+      });
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // TODO: Show error toast
+    }
   };
 
   const handleContact = async (product: Product) => {
@@ -173,6 +206,10 @@ const Search = () => {
 
   const handleDashboardClick = () => {
     navigate('/dashboard');
+  };
+
+  const handleFavoritesClick = () => {
+    navigate('/favorites');
   };
 
   const handleLogoutClick = () => {
@@ -218,6 +255,7 @@ const Search = () => {
         onRegisterClick={handleRegister}
         onSellClick={handleSellClick}
         onDashboardClick={handleDashboardClick}
+        onFavoritesClick={handleFavoritesClick}
         onLogoutClick={handleLogoutClick}
       />
 
