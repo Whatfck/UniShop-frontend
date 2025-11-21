@@ -7,7 +7,9 @@ interface ProductGridProps {
   onProductClick?: (product: Product) => void;
   onFavoriteToggle?: (productId: string) => void;
   onContact?: (product: Product) => void;
+  onDelete?: (productId: string) => void;
   showContactButton?: boolean;
+  showDeleteButton?: boolean;
   isAuthenticated?: boolean;
 }
 
@@ -17,7 +19,9 @@ const ProductGrid = ({
   onProductClick,
   onFavoriteToggle,
   onContact,
+  onDelete,
   showContactButton = true,
+  showDeleteButton = false,
   isAuthenticated = false
 }: ProductGridProps) => {
   if (isLoading) {
@@ -101,7 +105,9 @@ const ProductGrid = ({
           onClick={() => onProductClick?.(product)}
           onFavoriteToggle={() => onFavoriteToggle?.(product.id)}
           onContact={() => onContact?.(product)}
+          onDelete={() => onDelete?.(product.id)}
           showContactButton={showContactButton}
+          showDeleteButton={showDeleteButton}
           isAuthenticated={isAuthenticated}
         />
       ))}
