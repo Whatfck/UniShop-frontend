@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { Button } from '../ui';
+import type { Theme } from '../../types';
 
 interface HeaderProps {
   searchQuery: string;
@@ -14,6 +15,9 @@ interface HeaderProps {
     role?: 'USER' | 'MODERATOR' | 'ADMIN';
   };
   hasProductsForSale?: boolean;
+  theme?: Theme;
+  resolvedTheme?: 'light' | 'dark';
+  onThemeToggle?: () => void;
   onLoginClick?: () => void;
   onRegisterClick?: () => void;
   onSellClick?: () => void;
@@ -28,6 +32,9 @@ const Header = ({
   isAuthenticated = false,
   user,
   hasProductsForSale = false,
+  theme = 'light',
+  resolvedTheme = 'light',
+  onThemeToggle,
   onLoginClick,
   onRegisterClick,
   onSellClick,
