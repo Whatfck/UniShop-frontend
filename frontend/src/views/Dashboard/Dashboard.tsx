@@ -29,6 +29,9 @@ const Dashboard = () => {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showCreateProductModal, setShowCreateProductModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [hasProductsForSale, setHasProductsForSale] = useState(false);
   const { resolvedTheme } = useTheme();
 
@@ -182,6 +185,34 @@ const Dashboard = () => {
   const handleProductCreated = () => {
     // Refresh user products after creating a new one
     fetchUserProducts();
+  };
+
+  const handleDeleteClick = (productId: string) => {
+    const product = userProducts.find(p => p.id === productId);
+    if (product) {
+      setProductToDelete(product);
+      setShowDeleteModal(true);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!productToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await apiService.deleteProduct(productToDelete.id);
+
+      // Remove from local state after successful deletion
+      setUserProducts(prev => prev.filter(p => p.id !== productToDelete.id));
+      setShowDeleteModal(false);
+      setProductToDelete(null);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      // For now, show a simple alert. You might want to use a toast notification system
+      alert('Error al eliminar el producto. Por favor, intenta de nuevo.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleProfileClick = () => {
@@ -393,7 +424,9 @@ const Dashboard = () => {
                 onProductClick={handleProductClick}
                 onFavoriteToggle={handleFavoriteToggle}
                 onContact={handleContact}
+                onDelete={handleDeleteClick}
                 showContactButton={false}
+                showDeleteButton={true}
                 isAuthenticated={isAuthenticated}
               />
 
@@ -600,6 +633,44 @@ const Dashboard = () => {
             </div>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Product Confirmation Modal */}
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Eliminar Producto" size="md">
+        <div className="space-y-6">
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              ¿Estás seguro de que quieres eliminar este producto?
+            </h3>
+            <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+              Esta acción no se puede deshacer. El producto "{productToDelete?.title}" será eliminado permanentemente.
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(false)}
+              className="flex-1 px-4 py-2 border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-hover)] transition-colors"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-colors"
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar Producto'}
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

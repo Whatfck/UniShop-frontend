@@ -93,11 +93,14 @@ const ProductDetail = () => {
   const handleFavoriteToggle = async () => {
     if (!product) return;
 
+    const previousState = isFavorited;
+    setIsFavorited(!isFavorited); // Optimistic update
+
     try {
-      const response = await apiService.toggleFavorite(Number(product.id));
-      setIsFavorited(response.isFavorited);
+      await apiService.toggleFavorite(Number(product.id));
     } catch (error) {
       console.error('Error toggling favorite:', error);
+      setIsFavorited(previousState); // Revert on error
       // TODO: Show error toast
     }
   };
@@ -560,7 +563,7 @@ const ProductDetail = () => {
                   e?.stopPropagation();
                   handleFavoriteToggle();
                 }}
-                className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white z-20"
+                className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white z-20 opacity-100"
                 aria-label={isFavorited ? "Quitar de favoritos" : "Agregar a favoritos"}
               >
                 <Heart

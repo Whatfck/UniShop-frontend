@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, MapPin, Clock } from 'lucide-react';
+import { Heart, MapPin, Clock, Trash2 } from 'lucide-react';
 import { Button } from '../../ui';
 import { cn } from '../../../utils/cn';
 import type { Product } from '../../../types';
@@ -10,8 +10,10 @@ interface ProductCardProps {
   onFavoriteToggle?: () => void;
   onContact?: () => void;
   onClick?: () => void;
+  onDelete?: () => void;
   priority?: 'high' | 'low';
   showContactButton?: boolean;
+  showDeleteButton?: boolean;
   isAuthenticated?: boolean;
 }
 
@@ -21,8 +23,10 @@ const ProductCard = ({
   onFavoriteToggle,
   onContact,
   onClick,
+  onDelete,
   priority = 'low',
   showContactButton = false,
+  showDeleteButton = false,
   isAuthenticated = false
 }: ProductCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -80,7 +84,21 @@ const ProductCard = ({
 
         {/* Overlay de acciones */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200">
-          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+            {showDeleteButton && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e?.stopPropagation();
+                  onDelete?.();
+                }}
+                className="bg-white/90 backdrop-blur-sm hover:bg-white text-red-600 hover:text-red-700"
+                aria-label="Eliminar producto"
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
