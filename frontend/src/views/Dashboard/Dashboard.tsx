@@ -31,6 +31,7 @@ const Dashboard = () => {
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [hasProductsForSale, setHasProductsForSale] = useState(false);
   const { resolvedTheme } = useTheme();
 
@@ -197,17 +198,20 @@ const Dashboard = () => {
   const handleDeleteConfirm = async () => {
     if (!productToDelete) return;
 
+    setIsDeleting(true);
     try {
-      // TODO: Add delete product API call
-      // await apiService.deleteProduct(productToDelete.id);
+      await apiService.deleteProduct(productToDelete.id);
 
-      // For now, just remove from local state
+      // Remove from local state after successful deletion
       setUserProducts(prev => prev.filter(p => p.id !== productToDelete.id));
       setShowDeleteModal(false);
       setProductToDelete(null);
     } catch (error) {
       console.error('Error deleting product:', error);
-      // TODO: Show error message
+      // For now, show a simple alert. You might want to use a toast notification system
+      alert('Error al eliminar el producto. Por favor, intenta de nuevo.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -660,9 +664,10 @@ const Dashboard = () => {
             <button
               type="button"
               onClick={handleDeleteConfirm}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              disabled={isDeleting}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-colors"
             >
-              Eliminar Producto
+              {isDeleting ? 'Eliminando...' : 'Eliminar Producto'}
             </button>
           </div>
         </div>

@@ -242,6 +242,16 @@ class ApiService {
     });
   }
 
+  async deleteProduct(productId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/api/v1/products/${productId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+  }
+
   // Image upload
   async uploadProductImages(files: File[]): Promise<{ url: string; filename: string }[]> {
     const formData = new FormData();
