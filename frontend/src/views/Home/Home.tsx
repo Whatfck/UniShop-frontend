@@ -193,8 +193,7 @@ const Home = () => {
   };
 
   const handleSellClick = () => {
-    // TODO: Navigate to sell product page
-    console.log('Navigate to sell product page');
+    navigate('/dashboard?sell=true');
   };
 
 
