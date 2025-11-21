@@ -1,0 +1,34 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo transparente -->
+  <defs>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="0" dy="3" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <g transform="translate(100, 90)" filter="url(#shadow)">
+    <!-- U mayúscula en azul -->
+    <text x="0" y="35" 
+          font-family="Arial, Helvetica, sans-serif" 
+          font-size="120" 
+          font-weight="bold"
+          fill="#4d8eff"
+          text-anchor="middle">U</text>
+    
+    <!-- s minúscula como subíndice en naranja -->
+    <text x="40" y="50" 
+          font-family="Arial, Helvetica, sans-serif" 
+          font-size="75" 
+          font-weight="bold"
+          fill="#ff9c4a"
+          text-anchor="middle">s</text>
+  </g>
+</svg>
