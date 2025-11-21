@@ -27,7 +27,7 @@ function App() {
 
         {/* Botones flotantes disponibles en todas las páginas */}
         <BackToTop />
-        <Chatbot apiUrl="http://localhost:8000" />
+        <Chatbot />
       </Router>
     </AuthProvider>
   )

@@ -15,7 +15,9 @@ interface ChatbotProps {
   apiUrl?: string;
 }
 
-const Chatbot: React.FC<ChatbotProps> = ({ apiUrl = 'http://localhost:8000' }) => {
+const Chatbot: React.FC<ChatbotProps> = ({ apiUrl }) => {
+  const defaultApiUrl = import.meta.env.VITE_IA_API_URL || 'http://localhost:8000';
+  const finalApiUrl = apiUrl || defaultApiUrl;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -52,7 +54,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ apiUrl = 'http://localhost:8000' }) =
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/v1/chatbot/message`, {
+      const response = await fetch(`${finalApiUrl}/api/v1/chatbot/message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

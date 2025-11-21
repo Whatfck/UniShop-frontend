@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Filter, SortAsc } from 'lucide-react';
 import { Header, Footer } from '../../components/layout';
 import { FilterPanel } from '../../components/features/search';
 import { ProductGrid } from '../../components/features/product';
+import { Button } from '../../components/ui';
+import Modal from '../../components/ui/Modal';
 import LoginModal from '../../components/auth/LoginModal';
 import RegisterModal from '../../components/auth/RegisterModal';
 import { useTheme } from '../../hooks';
@@ -24,7 +27,10 @@ const Search = () => {
   const { user, isAuthenticated, login, register, logout } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showFiltersModal, setShowFiltersModal] = useState(false);
+  const [showSortModal, setShowSortModal] = useState(false);
   const [pendingProductId, setPendingProductId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'price-low' | 'price-high'>('newest');
   const { theme, resolvedTheme, toggleTheme } = useTheme();
 
   // Scroll to top when component mounts
@@ -99,6 +105,11 @@ const Search = () => {
   const handleFiltersChange = (newFilters: ProductFilters) => {
     setFilters(newFilters);
     setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  const handleSortChange = (newSortBy: 'newest' | 'oldest' | 'price-low' | 'price-high') => {
+    setSortBy(newSortBy);
+    setCurrentPage(1); // Reset to first page when sort changes
   };
 
   const handleSearchChange = (query: string) => {
@@ -212,11 +223,77 @@ const Search = () => {
     logout();
   };
 
+  // Filter and sort products based on current filters and sort options
+  const getFilteredAndSortedProducts = () => {
+    let filtered = products.filter(product => {
+      // Category filter
+      if (filters.categoryId && product.category !== filters.categoryId.toString()) {
+        return false;
+      }
+
+      // Price filters
+      if (filters.priceMin && product.price < filters.priceMin) {
+        return false;
+      }
+      if (filters.priceMax && product.price > filters.priceMax) {
+        return false;
+      }
+
+      // Condition filter
+      if (filters.condition && product.condition !== filters.condition) {
+        return false;
+      }
+
+      // Date posted filter
+      if (filters.datePosted) {
+        const now = new Date();
+        const productDate = new Date(product.createdAt);
+        const diffTime = now.getTime() - productDate.getTime();
+        const diffDays = diffTime / (1000 * 3600 * 24);
+
+        switch (filters.datePosted) {
+          case 'today':
+            if (diffDays > 1) return false;
+            break;
+          case 'week':
+            if (diffDays > 7) return false;
+            break;
+          case 'month':
+            if (diffDays > 30) return false;
+            break;
+        }
+      }
+
+      return true;
+    });
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'oldest':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'price-low':
+          return a.price - b.price;
+        case 'price-high':
+          return b.price - a.price;
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  };
+
+  // Get filtered and sorted products
+  const filteredProducts = getFilteredAndSortedProducts();
+
   // Pagination logic
-  const totalPages = Math.ceil(products.length / productsPerPage);
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
   const startIndex = (currentPage - 1) * productsPerPage;
   const endIndex = startIndex + productsPerPage;
-  const currentProducts = products.slice(startIndex, endIndex);
+  const currentProducts = filteredProducts.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -271,6 +348,55 @@ const Search = () => {
                 Buscando: {formatSearchDescription(searchParams, filters)}
               </p>
             </div>
+
+            {/* Mobile Controls */}
+            <div className="lg:hidden mb-4">
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowFiltersModal(true)}
+                  className="flex-1 flex items-center justify-center gap-2"
+                  variant="outline"
+                >
+                  <Filter className="h-4 w-4" />
+                  Filtros
+                </Button>
+                <Button
+                  onClick={() => setShowSortModal(true)}
+                  className="flex-1 flex items-center justify-center gap-2"
+                  variant="outline"
+                >
+                  <SortAsc className="h-4 w-4" />
+                  Ordenar
+                </Button>
+              </div>
+            </div>
+
+            {/* Sort Controls - Desktop Only */}
+            <div className="hidden lg:flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div className="flex items-center gap-2">
+                <SortAsc className="h-4 w-4" style={{ color: 'var(--color-text-secondary)' }} />
+                <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                  Ordenar por:
+                </span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => handleSortChange(e.target.value as 'newest' | 'oldest' | 'price-low' | 'price-high')}
+                  className="px-3 py-1 border border-[var(--color-border)] rounded-md text-sm bg-[var(--color-surface)]"
+                  style={{ color: 'var(--color-text-primary)' }}
+                >
+                  <option value="newest">Más recientes</option>
+                  <option value="oldest">Más antiguos</option>
+                  <option value="price-low">Precio: menor a mayor</option>
+                  <option value="price-high">Precio: mayor a menor</option>
+                </select>
+              </div>
+
+              {/* Results count */}
+              <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
             <ProductGrid
               products={currentProducts}
               isLoading={isLoading}
@@ -283,45 +409,54 @@ const Search = () => {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-8">
-                <button
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-surface)] transition-colors"
-                  style={{ color: 'var(--color-text-primary)' }}
-                >
-                  Anterior
-                </button>
-
-                <div className="flex gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                    if (pageNum > totalPages) return null;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`px-3 py-2 border rounded-lg transition-colors ${
-                          currentPage === pageNum
-                            ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
-                            : 'border-[var(--color-border)] hover:bg-[var(--color-surface)]'
-                        }`}
-                        style={{ color: currentPage === pageNum ? 'white' : 'var(--color-text-primary)' }}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
+              <div className="mt-8">
+                <div className="text-center mb-4">
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    Página {currentPage} de {totalPages} • {filteredProducts.length} productos encontrados
+                  </p>
                 </div>
+                <div className="flex justify-center items-center gap-2">
+                  <button
+                    onClick={handlePrevPage}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 border border-[var(--color-border)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-surface)] transition-colors flex items-center gap-1"
+                    style={{ color: 'var(--color-text-primary)' }}
+                    aria-label="Página anterior"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
 
-                <button
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-surface)] transition-colors"
-                  style={{ color: 'var(--color-text-primary)' }}
-                >
-                  Siguiente
-                </button>
+                  <div className="flex gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                      if (pageNum > totalPages) return null;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-3 py-2 border rounded-lg transition-colors ${
+                            currentPage === pageNum
+                              ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                              : 'border-[var(--color-border)] hover:bg-[var(--color-surface)]'
+                          }`}
+                          style={{ color: currentPage === pageNum ? 'white' : 'var(--color-text-primary)' }}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 border border-[var(--color-border)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-surface)] transition-colors flex items-center gap-1"
+                    style={{ color: 'var(--color-text-primary)' }}
+                    aria-label="Página siguiente"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -329,6 +464,59 @@ const Search = () => {
       </main>
 
       <Footer />
+
+      {/* Filters Modal for Mobile */}
+      <Modal
+        isOpen={showFiltersModal}
+        onClose={() => setShowFiltersModal(false)}
+        title="Filtros"
+      >
+        <div className="p-4">
+          <FilterPanel
+            filters={filters}
+            onFiltersChange={(newFilters) => {
+              handleFiltersChange(newFilters);
+              setShowFiltersModal(false); // Close modal after applying filters
+            }}
+          />
+        </div>
+      </Modal>
+
+      {/* Sort Modal for Mobile */}
+      <Modal
+        isOpen={showSortModal}
+        onClose={() => setShowSortModal(false)}
+        title="Ordenar por"
+      >
+        <div className="p-4">
+          <div className="space-y-3">
+            {[
+              { value: 'newest', label: 'Más recientes' },
+              { value: 'oldest', label: 'Más antiguos' },
+              { value: 'price-low', label: 'Precio: menor a mayor' },
+              { value: 'price-high', label: 'Precio: mayor a menor' }
+            ].map((option) => (
+              <button
+                key={option.value}
+                onClick={() => {
+                  handleSortChange(option.value as 'newest' | 'oldest' | 'price-low' | 'price-high');
+                  setShowSortModal(false);
+                }}
+                className={`w-full p-3 text-left rounded-lg border transition-colors ${
+                  sortBy === option.value
+                    ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                    : 'border-[var(--color-border)] hover:bg-[var(--color-surface)]'
+                }`}
+                style={{
+                  color: sortBy === option.value ? 'white' : 'var(--color-text-primary)'
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Modal>
 
       <LoginModal
         isOpen={showLoginModal}
