@@ -5,6 +5,7 @@ import { ProductGrid } from '../../components/features/product';
 import LoginModal from '../../components/auth/LoginModal';
 import RegisterModal from '../../components/auth/RegisterModal';
 import CreateProductModal from '../../components/CreateProductModal';
+import Modal from '../../components/ui/Modal';
 import { useTheme } from '../../hooks';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Product } from '../../types';
@@ -514,98 +515,90 @@ const Dashboard = () => {
       />
 
       {/* Edit Profile Modal */}
-      {showEditProfileModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>
-                Editar Perfil
-              </h2>
+      <Modal isOpen={showEditProfileModal} onClose={() => setShowEditProfileModal(false)} title="Editar Perfil" size="md">
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target as HTMLFormElement);
+          const name = formData.get('name') as string;
+          const profileImageFile = formData.get('profileImage') as File;
 
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target as HTMLFormElement);
-                const name = formData.get('name') as string;
-                const profileImageFile = formData.get('profileImage') as File;
+          try {
+            let profileImageUrl = user?.avatar;
 
-                try {
-                  let profileImageUrl = user?.avatar;
+            // Upload new profile image if provided
+            if (profileImageFile && profileImageFile.size > 0) {
+              const uploadResult = await apiService.uploadProfileImage(profileImageFile);
+              profileImageUrl = uploadResult.url;
+            }
 
-                  // Upload new profile image if provided
-                  if (profileImageFile && profileImageFile.size > 0) {
-                    const uploadResult = await apiService.uploadProfileImage(profileImageFile);
-                    profileImageUrl = uploadResult.url;
-                  }
+            // Update profile
+            if (user?.id) {
+              await apiService.updateUserProfile(user.id, {
+                name: name || user.name,
+                profileImage: profileImageUrl
+              });
 
-                  // Update profile
-                  if (user?.id) {
-                    await apiService.updateUserProfile(user.id, {
-                      name: name || user.name,
-                      profileImage: profileImageUrl
-                    });
+              // Update local user state (you might need to update the auth context)
+              // For now, just close the modal
+              setShowEditProfileModal(false);
+              // You might want to refresh the page or update the user context
+              window.location.reload();
+            }
+          } catch (error) {
+            console.error('Error updating profile:', error);
+            // TODO: Show error message
+          }
+        }}>
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                Nombre
+              </label>
+              <input
+                type="text"
+                name="name"
+                defaultValue={user?.name}
+                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                style={{ color: 'var(--color-text-primary)' }}
+                required
+              />
+            </div>
 
-                    // Update local user state (you might need to update the auth context)
-                    // For now, just close the modal
-                    setShowEditProfileModal(false);
-                    // You might want to refresh the page or update the user context
-                    window.location.reload();
-                  }
-                } catch (error) {
-                  console.error('Error updating profile:', error);
-                  // TODO: Show error message
-                }
-              }}>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
-                      Nombre
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      defaultValue={user?.name}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                Foto de Perfil
+              </label>
+              <input
+                type="file"
+                name="profileImage"
+                accept="image/*"
+                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                style={{ color: 'var(--color-text-primary)' }}
+              />
+              <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+                Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB
+              </p>
+            </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
-                      Foto de Perfil
-                    </label>
-                    <input
-                      type="file"
-                      name="profileImage"
-                      accept="image/*"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB
-                    </p>
-                  </div>
-
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setShowEditProfileModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Guardar Cambios
-                  </button>
-                </div>
-              </form>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowEditProfileModal(false)}
+                className="flex-1 px-4 py-2 border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-hover)] transition-colors"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-hover)] transition-colors"
+              >
+                Guardar Cambios
+              </button>
             </div>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </div>
   );
 };
