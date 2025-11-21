@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Heart } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Button } from '../ui';
 import type { Theme } from '../../types';
 
@@ -17,12 +17,10 @@ interface HeaderProps {
   hasProductsForSale?: boolean;
   theme: Theme;
   resolvedTheme: 'light' | 'dark';
-  onThemeToggle: () => void;
   onLoginClick?: () => void;
   onRegisterClick?: () => void;
   onSellClick?: () => void;
   onDashboardClick?: () => void;
-  onFavoritesClick?: () => void;
   onLogoutClick?: () => void;
 }
 
@@ -35,12 +33,10 @@ const Header = ({
   hasProductsForSale = false,
   theme,
   resolvedTheme,
-  onThemeToggle,
   onLoginClick,
   onRegisterClick,
   onSellClick,
   onDashboardClick,
-  onFavoritesClick,
   onLogoutClick
 }: HeaderProps) => {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -166,17 +162,6 @@ const Header = ({
                       <button
                         onClick={() => {
                           setShowUserDropdown(false);
-                          onFavoritesClick?.();
-                        }}
-                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-hover)] transition-colors"
-                        style={{ color: 'var(--color-text-primary)' }}
-                      >
-                        <Heart className="h-4 w-4" />
-                        Mis Favoritos
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowUserDropdown(false);
                           onDashboardClick?.();
                         }}
                         className="block w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-hover)] transition-colors"
@@ -245,20 +230,7 @@ const Header = ({
         </div>
       )}
 
-      {/* Floating Theme Toggle Button */}
-      <button
-        onClick={onThemeToggle}
-        className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 w-12 h-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
-        style={{
-          backgroundColor: 'var(--color-surface)',
-          border: `2px solid var(--color-border)`,
-          color: 'var(--color-text-primary)'
-        }}
-        aria-label={`Tema actual: ${resolvedTheme === 'light' ? 'claro' : 'oscuro'}. Haz clic para cambiar`}
-        title={`Tema: ${resolvedTheme === 'light' ? 'Claro' : 'Oscuro'}`}
-      >
-        {resolvedTheme === 'light' ? '☀️' : '🌙'}
-      </button>
+
     </header>
   );
 };

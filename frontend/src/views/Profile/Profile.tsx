@@ -204,7 +204,6 @@ const Profile = () => {
           hasProductsForSale={hasProductsForSale}
           theme={theme}
           resolvedTheme={resolvedTheme}
-          onThemeToggle={toggleTheme}
           onLoginClick={handleLogin}
           onRegisterClick={handleRegister}
           onSellClick={handleSellClick}
@@ -235,7 +234,6 @@ const Profile = () => {
           hasProductsForSale={hasProductsForSale}
           theme={theme}
           resolvedTheme={resolvedTheme}
-          onThemeToggle={toggleTheme}
           onLoginClick={handleLogin}
           onRegisterClick={handleRegister}
           onSellClick={handleSellClick}
@@ -264,7 +262,6 @@ const Profile = () => {
         hasProductsForSale={hasProductsForSale}
         theme={theme}
         resolvedTheme={resolvedTheme}
-        onThemeToggle={toggleTheme}
         onLoginClick={handleLogin}
         onRegisterClick={handleRegister}
         onSellClick={handleSellClick}

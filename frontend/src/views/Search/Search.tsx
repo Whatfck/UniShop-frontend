@@ -48,7 +48,7 @@ const Search = () => {
       // If user is authenticated, check which products are favorited
       if (isAuthenticated && user) {
         try {
-          const favoriteIds = await apiService.getFavorites() as unknown as number[];
+          const favoriteIds = await apiService.getFavoriteIds();
           const favoriteIdSet = new Set(favoriteIds.map(id => String(id)));
           transformedProducts = transformedProducts.map(product => ({
             ...product,
@@ -208,10 +208,6 @@ const Search = () => {
     navigate('/dashboard');
   };
 
-  const handleFavoritesClick = () => {
-    navigate('/favorites');
-  };
-
   const handleLogoutClick = () => {
     logout();
   };
@@ -250,12 +246,10 @@ const Search = () => {
         hasProductsForSale={false}
         theme={theme}
         resolvedTheme={resolvedTheme}
-        onThemeToggle={toggleTheme}
         onLoginClick={handleLogin}
         onRegisterClick={handleRegister}
         onSellClick={handleSellClick}
         onDashboardClick={handleDashboardClick}
-        onFavoritesClick={handleFavoritesClick}
         onLogoutClick={handleLogoutClick}
       />
 
