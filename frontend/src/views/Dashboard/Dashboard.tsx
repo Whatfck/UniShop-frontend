@@ -10,7 +10,7 @@ import { useTheme } from '../../hooks';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Product } from '../../types';
 import { apiService } from '../../services/api';
-import { transformApiProduct } from '../../utils/apiTransformers';
+import { transformApiProduct, transformImageUrl } from '../../utils/apiTransformers';
 import { User, Package, Eye, Heart, TrendingUp, Plus, Edit, Sun, Moon } from 'lucide-react';
 
 const Dashboard = () => {
@@ -24,7 +24,7 @@ const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [favoritesPage, setFavoritesPage] = useState(1);
   const productsPerPage = 12;
-  const { user, isAuthenticated, login, register, logout } = useAuth();
+  const { user, isAuthenticated, login, register, logout, updateUser } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showCreateProductModal, setShowCreateProductModal] = useState(false);
@@ -538,11 +538,13 @@ const Dashboard = () => {
                 profileImage: profileImageUrl
               });
 
-              // Update local user state (you might need to update the auth context)
-              // For now, just close the modal
+              // Update local user state in auth context
+              updateUser({
+                name: name || user.name,
+                avatar: profileImageUrl ? transformImageUrl(profileImageUrl) : user.avatar
+              });
+
               setShowEditProfileModal(false);
-              // You might want to refresh the page or update the user context
-              window.location.reload();
             }
           } catch (error) {
             console.error('Error updating profile:', error);
