@@ -511,7 +511,7 @@ const ProductDetail = () => {
             <div className="lg:flex-1 lg:mx-auto lg:self-center">
             {/* Advanced Image Viewer */}
             <div
-              className={`relative aspect-square lg:max-h-[87vh] rounded-xl overflow-hidden bg-[var(--color-border)] select-none ${
+              className={`relative aspect-square lg:max-h-[87vh] rounded-xl overflow-hidden bg-[var(--color-border)] select-none group ${
                 isZoomed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
               }`}
               onMouseDown={handleMouseDown}
