@@ -1,11 +1,11 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist", 
+  "outputDirectory": "dist",
   "installCommand": "npm install",
   "framework": "vite",
   "env": {
-    "VITE_API_URL": "https://unishop.tailbb818c.ts.net/api",
-    "VITE_IA_API_URL": "https://unishop.tailbb818c.ts.net/api/ia"
+    "VITE_API_URL": "https://unishop.tailbb818c.ts.net/api/v1",
+    "VITE_IA_API_URL": "https://unishop.tailbb818c.ts.net/api/v1"
   },
   "rewrites": [
     {
