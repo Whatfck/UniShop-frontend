@@ -4,7 +4,8 @@
   "installCommand": "npm install",
   "framework": "vite",
   "env": {
-    "VITE_API_URL": "https://unishop.tailbb818c.ts.net"
+    "VITE_API_URL": "https://unishop.tailbb818c.ts.net",
+    "VITE_IA_API_URL": "https://unishop-ia.tailbb818c.ts.net"
   },
   "rewrites": [
     {
