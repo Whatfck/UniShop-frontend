@@ -16,7 +16,7 @@ interface ChatbotProps {
 }
 
 const Chatbot: React.FC<ChatbotProps> = ({ apiUrl }) => {
-  const defaultApiUrl = import.meta.env.VITE_IA_API_URL || 'http://localhost:8000';
+  const defaultApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
   const finalApiUrl = apiUrl || defaultApiUrl;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
